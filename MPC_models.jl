@@ -120,10 +120,10 @@ type MpcModel
         # Terminal constraints (soft), starting from 2nd lap
         # ---------------------------------
 
-        println("Q_Term = $Q_term")
-        println("coeffTermConst = $(getvalue(coeffTermConst))")
-        println("coeffTermCost = $(getvalue(coeffTermCost))")
-        println("order = $order")
+        #println("Q_Term = $Q_term")
+        #println("coeffTermConst = $(getvalue(coeffTermConst))")
+        #println("coeffTermCost = $(getvalue(coeffTermCost))")
+        #println("order = $order")
         @NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}+
                                             (1-ParInt)*sum{coeffTermConst[i,2,j]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}-z_Ol[N+1,j])^2,j=1:5})
         
@@ -142,7 +142,6 @@ type MpcModel
         @NLobjective(mdl, Min, derivCost + controlCost + laneCost + constZTerm + costZTerm)
         solve(mdl)
         println("finished")
-        readline()
         m.mdl = mdl
         m.z0 = z0
         m.coeff = coeff

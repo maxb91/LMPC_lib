@@ -58,7 +58,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams_pF.QderivU        = 0.1*[1,1]                 # cost matrix for derivative cost of inputs
     mpcParams_pF.vPathFollowing = 0.5                       # reference speed for first lap of path following
 
-    trackCoeff.nPolyCurvature   = 4                         # 4th order polynomial for curvature approximation
+    trackCoeff.nPolyCurvature   = 8                         # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.width            = 0.6                       # width of the track (0.5m)
 
