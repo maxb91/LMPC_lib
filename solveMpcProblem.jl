@@ -47,12 +47,12 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     sol_status  = solve(mdl.mdl)
     println("Solved")
 
-    println("derivCost: $(getvalue(mdl.derivCost))")
-    println("controlCost: $(getvalue(mdl.controlCost))")
-    println("termCost: $(getvalue(mdl.costZTerm))")
-    println("mdl.termConst: $(getvalue(mdl.constZTerm))")
+    #println("derivCost: $(getvalue(mdl.derivCost))")
+    #println("controlCost: $(getvalue(mdl.controlCost))")
+    #println("termCost: $(getvalue(mdl.costZTerm))")
+    #println("mdl.termConst: $(getvalue(mdl.constZTerm))")
     #println("termConst: $(getvalue(constZTerm))")
-    println("laneCost: $(getvalue(mdl.laneCost))")
+    #println("laneCost: $(getvalue(mdl.laneCost))")
 
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
