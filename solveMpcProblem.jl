@@ -23,8 +23,6 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     sol_u::Array{Float64,2}
     sol_z::Array{Float64,2}
 
-    N = mpcParams.N
-
     # println("************************************** MPC SOLVER **************************************")
     # println("zCurr    = $(zCurr')")
     # println("s_start  = $s_start")
@@ -32,17 +30,6 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # println("s_total  = $((zCurr[1]+s_start)%s_target)")
 
     # Update current initial condition, curvature and System ID coefficients
-
-    Q_term          = mpcParams.Q_term
-    R               = mpcParams.R
-    order           = mpcCoeff.order       # polynomial order of terminal constraints and cost approximation
-    ey_max          = trackCoeff.width/2
-
-    QderivZ         = mpcParams.QderivZ::Array{Float64,1}
-    QderivU         = mpcParams.QderivU::Array{Float64,1}
-    Q_term_cost     = mpcParams.Q_term_cost::Float64
-
-    n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
 
     setvalue(mdl.z0,zCurr)
     setvalue(mdl.uCurr,uCurr[:])
