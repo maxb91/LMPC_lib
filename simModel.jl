@@ -128,15 +128,19 @@ function simDynModel_xy(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     FyF = -pacejka(a_F)
     FyR = -pacejka(a_R)
 
+    if abs(a_F) > 30/180*pi || abs(a_R) > 30/180*pi
+        warn("Large slip angles in simulation: a_F = $a_F, a_R = $a_R")
+    end
+
     zNext = copy(z)
     # compute next state
-    zNext[1]        = zNext[1]       + dt * (cos(z[5])*z[3] - sin(z[5])*z[4])
-    zNext[2]        = zNext[2]       + dt * (sin(z[5])*z[3] + cos(z[5])*z[4])
-    zNext[3]        = zNext[3]       + dt * (u[1] + z[4]*z[6] - 0.63*z[3]^2*sign(z[3]))
-    zNext[4]        = zNext[4]       + dt * (2/m*(FyF*cos(z[7]) + FyR) - z[6]*z[3])
-    zNext[5]        = zNext[5]       + dt * (z[6])
-    zNext[6]        = zNext[6]       + dt * (2/I_z*(L_f*FyF - L_r*FyR))
-    zNext[7]        = zNext[7]       + dt * v_steer * sign(u[2]-z[7])
+    zNext[1]        = zNext[1]       + dt * (cos(z[5])*z[3] - sin(z[5])*z[4])               # x
+    zNext[2]        = zNext[2]       + dt * (sin(z[5])*z[3] + cos(z[5])*z[4])               # y
+    zNext[3]        = zNext[3]       + dt * (u[1] + z[4]*z[6] - 0.63*z[3]^2*sign(z[3]))     # v_x
+    zNext[4]        = zNext[4]       + dt * (2/m*(FyF*cos(z[7]) + FyR) - z[6]*z[3])         # v_y
+    zNext[5]        = zNext[5]       + dt * (z[6])                                          # psi
+    zNext[6]        = zNext[6]       + dt * (2/I_z*(L_f*FyF - L_r*FyR))                     # psiDot
+    zNext[7]        = zNext[7]       + dt * v_steer * sign(u[2]-z[7])                       # d_f
 
     return zNext, [a_F a_R]
 end

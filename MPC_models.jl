@@ -47,7 +47,7 @@ type MpcModel
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
         
-        mdl = Model(solver = IpoptSolver(print_level=3,max_cpu_time=0.5))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.5))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
         @variable( mdl, z_Ol[1:(N+1),1:6], start = 0)
         @variable( mdl, u_Ol[1:N,1:2],     start = 0)
@@ -214,7 +214,7 @@ type MpcModel_pF
         u_Ref           = zeros(N,2)
 
         # Create Model
-        mdl = Model(solver = IpoptSolver(print_level=3,max_cpu_time=5.0))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=5.0))#,linear_solver="ma57",print_user_options="yes"))
 
         # Create variables (these are going to be optimized)
         @variable( mdl, z_Ol[1:(N+1),1:4])          # z = s, ey, epsi, v
@@ -267,13 +267,13 @@ type MpcModel_pF
         @NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=2:N+1},i=1:4})    # Follow trajectory
 
         # Objective function
-        @NLobjective(mdl, Min, costZ)# + derivCost + controlCost)
+        @NLobjective(mdl, Min, costZ + derivCost + controlCost)
 
         # create first artificial solution (for warm start)
-        setvalue(z_Ol[1,:],z_Init')
-        for i=2:N+1
-            setvalue(z_Ol[i,:],[0 0 0 v_ref])
-        end
+        # setvalue(z_Ol[1,:],z_Init')
+        # for i=2:N+1
+        #    setvalue(z_Ol[i,:],[0 0 0 v_ref])
+        # end
         # First solve
         #JuMP.build(mdl)
         #println("Initialized path following controller. Starting first solve...")

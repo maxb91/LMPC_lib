@@ -8,13 +8,14 @@
 # The number of recorded states during one trajectory (0 <= s < s_target) is equal to <oldCost>.
 # After the recorded trajectory, the rest of the vector (until <buffersize>) is filled up with constant values
 
-function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{Float64},lapStatus::LapStatus,posInfo::PosInfo,buffersize::Int64,dt::Float64)
-                
+function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{Float64},lapStatus::LapStatus,posInfo::PosInfo,buffersize::Int64)
+                println("Starting function")
                 i               = lapStatus.currentIt-1         # i = number of points for 0 <= s < s_target (= cost of this lap)
                 prebuf          = oldTraj.prebuf                # so many points of the end of the previous old traj will be attached to the beginning
                 zCurr_export    = zeros(buffersize,6)
                 uCurr_export    = zeros(buffersize,2)
 
+                println("Creating exports")
                 zCurr_export    = cat(1,oldTraj.oldTraj[oldTraj.oldCost[1]+1:oldTraj.oldCost[1]+prebuf,:,1],
                                         zCurr[1:i,:], NaN*ones(buffersize-i-prebuf,6))#[ones(buffersize-i-prebuf,1)*zCurr[i,1:5] zCurr[i,6]+collect(1:buffersize-i-prebuf)*dt*zCurr[i,1]])
                 uCurr_export    = cat(1,oldTraj.oldInput[oldTraj.oldCost[1]+1:oldTraj.oldCost[1]+prebuf,:,1],
@@ -22,7 +23,7 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
 
                 zCurr_export[1:prebuf,6] -= posInfo.s_target       # make the prebuf-values below zero
                 costLap                   = i                      # the cost of the current lap is the time it took to reach the finish line
-
+                println("Saving")
                 # Save all data in oldTrajectory:
                 if lapStatus.currentLap <= 2                        # if it's the first or second lap
                     oldTraj.oldTraj[:,:,1]  = zCurr_export          # ... just save everything
@@ -44,19 +45,19 @@ end
 
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
-    mpcParams.N                 = 5
-    mpcParams.Q_term            = 0.1*[0.01,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
+    mpcParams.N                 = 10
+    mpcParams.Q_term            = 1.0*[1.0,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 0.1*[1,10]                    # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 1.0*[10,10]                    # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.01                          # scaling of Q-function
 
-    mpcParams_pF.N              = 5
-    mpcParams_pF.Q              = [0.0,10.0,0.1,1.0]
+    mpcParams_pF.N              = 10
+    mpcParams_pF.Q              = [0.0,10.0,0.0,1.0]
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
-    mpcParams_pF.QderivU        = 0.1*[1,1]                 # cost matrix for derivative cost of inputs
-    mpcParams_pF.vPathFollowing = 0.5                       # reference speed for first lap of path following
+    mpcParams_pF.QderivU        = 1.0*[1,10]                 # cost matrix for derivative cost of inputs
+    mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 8                         # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)

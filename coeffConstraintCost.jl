@@ -223,7 +223,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     if any(isnan,y_yDot)            # check if any value in the y_yDot value is NaN
         warn("NaN value detected in coeffConstraintCost! Press to continue...")
-        readline()
+        #readline()
     end
     mpcCoeff.c_Psi = (A_psi'*A_psi)\A_psi'*y_psi
     mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot
