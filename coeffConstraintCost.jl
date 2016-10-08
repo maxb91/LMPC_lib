@@ -152,9 +152,9 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
  
     # xDot
     y_xDot = diff(oldxDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
-    A_xDot = [oldyDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]] oldxDot[vec_range_ID[1]].^2 olda[vec_range_ID[1]]]
+    A_xDot = [oldyDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]] olda[vec_range_ID[1]]]
     y_xDot = cat(1,y_xDot,diff(currentTraj[end-n_prev:end,1]))
-    A_xDot = cat(1,A_xDot,[currentTraj[vec_range_ID2,2] currentTraj[vec_range_ID2,3] currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,1]])
+    A_xDot = cat(1,A_xDot,[currentTraj[vec_range_ID2,2] currentTraj[vec_range_ID2,3] currentInput[vec_range_ID2,1]])
 
     # yDot
     y_yDot = diff(oldyDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])
@@ -166,7 +166,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         y_psi  = cat(1,y_psi,diff(oldpsiDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
         A_psi  = cat(1,A_psi,[oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
         y_xDot = cat(1,y_xDot,diff(oldxDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
-        A_xDot = cat(1,A_xDot,[oldyDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]] oldxDot[vec_range_ID[2]].^2 olda[vec_range_ID[2]]])
+        A_xDot = cat(1,A_xDot,[oldyDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]] olda[vec_range_ID[2]]])
         y_yDot = cat(1,y_yDot,diff(oldyDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
         A_yDot = cat(1,A_yDot,[oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]].*oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
     end
