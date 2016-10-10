@@ -46,11 +46,11 @@ end
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
     mpcParams.N                 = 10
-    mpcParams.Q_term            = 0.1*[1.0,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
+    mpcParams.Q_term            = 0.1*[0.01,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[10,10]                   # cost matrix for derivative cost of inputs
-    mpcParams.Q_term_cost       = 0.01                          # scaling of Q-function
+    mpcParams.QderivU           = 1.0*[1,1]                     # cost matrix for derivative cost of inputs
+    mpcParams.Q_term_cost       = 0.1                           # scaling of Q-function
 
     mpcParams_pF.N              = 10
     mpcParams_pF.Q              = [0.0,10.0,0.0,1.0]

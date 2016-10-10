@@ -232,6 +232,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
                                                             # this might happen on long straight parts of the track (no change in psi/y states)
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst
+
+    println("************ COEFFICIENTS ************")
+    println(coeffCost)
+    println(coeffConst)
+    println("********** END COEFFICIENTS **********")
     nothing
 end
 

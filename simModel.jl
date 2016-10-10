@@ -51,14 +51,11 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     I_z = modelParams.I_z
     c_f = modelParams.c_f
 
-    #z[7] = u[1]
-    #z[8] = u[2]
-
     a_F = 0
     a_R = 0
-    if abs(z[1]) >= 0.02
-        a_F     = atan((z[2] + L_f*z[3])/z[1]) - z[8]
-        a_R     = atan((z[2] - L_r*z[3])/z[1])
+    if abs(z[1]) >= 0.1
+        a_F     = atan((z[2] + L_f*z[3])/abs(z[1])) - z[8]
+        a_R     = atan((z[2] - L_r*z[3])/abs(z[1]))
     end
     if max(abs(a_F),abs(a_R))>20/180*pi
         warn("Large tire angles: a_F = $a_F, a_R = $a_R, xDot = $(z[1]), d_F = $(z[8])")
@@ -67,7 +64,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     FyF = -pacejka(a_F)
     FyR = -pacejka(a_R)
     
-    c = ([z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]                        # Polynomial for curvature
+    c = ([z[1]^8 z[2]^7 z[3]^6 z[4]^5 z[5]^4 z[6]^3 z[7]^2 z[8] 1]*coeff)[1]                        # Polynomial for curvature
     
     dsdt = (z[1]*cos(z[4]) - z[2]*sin(z[4]))/(1-z[5]*c)
 
