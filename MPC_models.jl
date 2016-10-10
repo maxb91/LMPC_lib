@@ -47,7 +47,7 @@ type MpcModel
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
         
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.5))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.1))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
         @variable( mdl, z_Ol[1:(N+1),1:6], start = 0)
         @variable( mdl, u_Ol[1:N,1:2],     start = 0)
@@ -73,7 +73,7 @@ type MpcModel
 
         @NLparameter(mdl, z0[i=1:6] == z_Init[i])
         @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0);
-        @NLparameter(mdl, c_Vx[i=1:4]  == 0)
+        @NLparameter(mdl, c_Vx[i=1:3]  == 0)
         @NLparameter(mdl, c_Vy[i=1:4]  == 0)
         @NLparameter(mdl, c_Psi[i=1:3] == 0)
         @NLparameter(mdl, coeffTermConst[i=1:order+1,j=1:2,k=1:5] == 0)
@@ -81,7 +81,7 @@ type MpcModel
         @NLparameter(mdl, uCurr[1:2] == 0)
 
         # Conditions for first solve:
-        setvalue(c_Vx[4],1)
+        setvalue(c_Vx[3],1)
         setvalue(c_Vy[4],1)
         setvalue(c_Psi[3],1)
 
@@ -94,7 +94,7 @@ type MpcModel
 
         # System dynamics
         for i=1:N
-            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1]^2 + c_Vx[4]*u_Ol[i,1])                             # xDot
+            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*u_Ol[i,1])                             # xDot
             @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + c_Vy[1]*z_Ol[i,2]/z_Ol[i,1] + c_Vy[2]*z_Ol[i,1]*z_Ol[i,3] + c_Vy[3]*z_Ol[i,3]/z_Ol[i,1] + c_Vy[4]*u_Ol[i,2]) # yDot
             @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*u_Ol[i,2])                            # psiDot
             @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(z_Ol[i,3]-dsdt[i]*c[i]))                                                                                 # ePsi
@@ -134,7 +134,7 @@ type MpcModel
         @NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}+
                                       (1-ParInt)*sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}))
         
-        @NLobjective(mdl,Min,sum{(z_Ol[i,1]-0.5)^2,i=1:N+1})
+        @NLobjective(mdl,Min,sum{(z_Ol[i,1]-0.8)^2,i=1:N+1}+derivCost+controlCost+laneCost)
 
         # solve model once
         println("solving...")
@@ -214,7 +214,7 @@ type MpcModel_pF
         u_Ref           = zeros(N,2)
 
         # Create Model
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=5.0))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,linear_solver="ma57",print_user_options="yes"))
 
         # Create variables (these are going to be optimized)
         @variable( mdl, z_Ol[1:(N+1),1:4])          # z = s, ey, epsi, v

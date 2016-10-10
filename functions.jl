@@ -46,10 +46,10 @@ end
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
     mpcParams.N                 = 10
-    mpcParams.Q_term            = 1.0*[1.0,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
+    mpcParams.Q_term            = 0.1*[1.0,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[10,10]                    # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 1.0*[10,10]                   # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.01                          # scaling of Q-function
 
     mpcParams_pF.N              = 10
@@ -57,7 +57,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
     mpcParams_pF.QderivU        = 1.0*[1,10]                 # cost matrix for derivative cost of inputs
-    mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
+    mpcParams_pF.vPathFollowing = 0.5                       # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 8                         # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
@@ -87,7 +87,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcCoeff.coeffCost          = zeros(mpcCoeff.order+1,2)
     mpcCoeff.coeffConst         = zeros(mpcCoeff.order+1,2,5)
     mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
-    mpcCoeff.c_Vx               = zeros(4)
+    mpcCoeff.c_Vx               = zeros(3)
     mpcCoeff.c_Vy               = zeros(4)
     mpcCoeff.c_Psi              = zeros(3)
 
