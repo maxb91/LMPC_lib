@@ -32,12 +32,9 @@ function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff
     u[2] = min(u[2],pi/6)
     u[2] = max(u[2],-pi/6)
     dtn = dt/100
-    println("0. u = $u")
-    println("1. z = $(z_final)")
     for i=1:100
         z_final = simDynModel(z_final,u,dtn,coeff,modelParams)
     end
-    println("2. z = $(z_final)")
     return z_final
 end
 
@@ -57,7 +54,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
         a_F     = atan((z[2] + L_f*z[3])/abs(z[1])) - z[8]
         a_R     = atan((z[2] - L_r*z[3])/abs(z[1]))
     end
-    if max(abs(a_F),abs(a_R))>20/180*pi
+    if max(abs(a_F),abs(a_R))>30/180*pi
         warn("Large tire angles: a_F = $a_F, a_R = $a_R, xDot = $(z[1]), d_F = $(z[8])")
     end
     

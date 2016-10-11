@@ -188,13 +188,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # grid("on")
     # subplot(513)
     # plot(A_xDot[:,3],"-o")
-    # legend(["xDot.^2"])
-    # grid("on")
-    # subplot(514)
-    # plot(A_xDot[:,4],"-o")
     # legend(["a"])
-    # grid("on")
-    # subplot(515)
+    # subplot(514)
     # plot(y_xDot,"-o")
     # legend(["y_xDot"])
     # grid("on")
@@ -223,20 +218,26 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # readline()
 
     if any(isnan,y_yDot)            # check if any value in the y_yDot value is NaN
-        warn("NaN value detected in coeffConstraintCost! Press to continue...")
+        println(y_yDot)
+        warn("NaN value detected in y_yDot! Press to continue...")
+        #readline()
+    end
+    if any(isnan,coeffCost)
+        println(coeffCost)
+        warn("NaN value detected in coeffCost! Press to continue...")
+        #readline()
+    end
+    if any(isnan,coeffConst)
+        println(coeffCost)
+        warn("NaN value detected in coeffConst! Press to continue...")
         #readline()
     end
     mpcCoeff.c_Psi = (A_psi'*A_psi)\A_psi'*y_psi
-    mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot
-    mpcCoeff.c_Vy  = (A_yDot'*A_yDot)\A_yDot'*y_yDot        # Todo: If all matrix/vector values are really low (<e-22) this might return an error
-                                                            # this might happen on long straight parts of the track (no change in psi/y states)
+    mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot         # the identity matrix is used to scale the coefficients
+    mpcCoeff.c_Vy  = (A_yDot'*A_yDot)\A_yDot'*y_yDot
+
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst
-
-    println("************ COEFFICIENTS ************")
-    println(coeffCost)
-    println(coeffConst)
-    println("********** END COEFFICIENTS **********")
     nothing
 end
 

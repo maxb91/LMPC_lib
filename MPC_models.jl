@@ -24,7 +24,7 @@ type MpcModel
 
     uCurr::Array{JuMP.NonlinearParameter,1}
 
-    function MpcModel(mpcParams::MpcParams,mpcCoeff::MpcCoeff,modelParams::ModelParams,trackCoeff::TrackCoeff,z_Init::Array{Float64,1})
+    function MpcModel(mpcParams::MpcParams,mpcCoeff::MpcCoeff,modelParams::ModelParams,trackCoeff::TrackCoeff)
         m = new()
         dt   = modelParams.dt
         L_a  = modelParams.l_A
@@ -56,7 +56,7 @@ type MpcModel
         z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                      # lower bounds on states
         z_ub_6s = ones(mpcParams.N+1,1)*[3.0  Inf  Inf  Inf  Inf  Inf]                      # upper bounds
         u_lb_6s = ones(mpcParams.N,1) * [-1.0  -pi/6]                                       # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [3.0    pi/6]                                       # upper bounds
+        u_ub_6s = ones(mpcParams.N,1) * [5.0    pi/6]                                       # upper bounds
 
         for i=1:2
             for j=1:N
@@ -71,7 +71,7 @@ type MpcModel
             end
         end
 
-        @NLparameter(mdl, z0[i=1:6] == z_Init[i])
+        @NLparameter(mdl, z0[i=1:6] == 0)
         @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0);
         @NLparameter(mdl, c_Vx[i=1:3]  == 0)
         @NLparameter(mdl, c_Vy[i=1:4]  == 0)
@@ -81,9 +81,8 @@ type MpcModel
         @NLparameter(mdl, uCurr[1:2] == 0)
 
         # Conditions for first solve:
+        setvalue(z0[1],1)
         setvalue(c_Vx[3],1)
-        setvalue(c_Vy[4],1)
-        setvalue(c_Psi[3],1)
 
         @NLconstraint(mdl, [i=1:6], z_Ol[1,i] == z0[i])
 
@@ -115,33 +114,25 @@ type MpcModel
 
         # Control Input cost
         # ---------------------------------
-        @NLexpression(mdl, controlCost, 0.5*sum{R[j]*sum{(u_Ol[i,j])^2,i=1:N},j=1:2})
+        @NLexpression(mdl, controlCost, sum{R[j]*sum{(u_Ol[i,j])^2,i=1:N},j=1:2})
 
         # Terminal constraints (soft), starting from 2nd lap
         # ---------------------------------
-
-        #println("Q_Term = $Q_term")
-        #println("coeffTermConst = $(getvalue(coeffTermConst))")
-        #println("coeffTermCost = $(getvalue(coeffTermCost))")
-        #println("order = $order")
-        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}+
-                                            (1-ParInt)*sum{coeffTermConst[i,2,j]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}-z_Ol[N+1,j])^2,j=1:5})
+        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j])+
+                                            (1-ParInt)*(sum{coeffTermConst[i,2,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,2,j])-z_Ol[N+1,j])^2,j=1:5})
         
         # Terminal cost
         # ---------------------------------
         # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
+        @NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
+                                      (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
         
-        @NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}+
-                                      (1-ParInt)*sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order+1}))
-        
-        @NLobjective(mdl,Min,sum{(z_Ol[i,1]-0.8)^2,i=1:N+1}+derivCost+controlCost+laneCost)
-
-        # solve model once
-        println("solving...")
-        solve(mdl)
+        # Solve model once
         @NLobjective(mdl, Min, derivCost + controlCost + laneCost + constZTerm + costZTerm)
-        solve(mdl)
-        println("finished")
+        sol_stat=solve(mdl)
+        println("Finished solve 1: $sol_stat")
+        sol_stat=solve(mdl)
+        println("Finished solve 2: $sol_stat")
         m.mdl = mdl
         m.z0 = z0
         m.coeff = coeff
@@ -186,7 +177,7 @@ type MpcModel_pF
 
     uCurr::Array{JuMP.NonlinearParameter,1}
 
-    function MpcModel_pF(mpcParams::MpcParams,modelParams::ModelParams,trackCoeff::TrackCoeff,z_Init::Array{Float64,1})
+    function MpcModel_pF(mpcParams::MpcParams,modelParams::ModelParams,trackCoeff::TrackCoeff)
         println("Starting creation of pf model")
         m = new()
         dt          = modelParams.dt
@@ -217,8 +208,8 @@ type MpcModel_pF
         mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,linear_solver="ma57",print_user_options="yes"))
 
         # Create variables (these are going to be optimized)
-        @variable( mdl, z_Ol[1:(N+1),1:4])          # z = s, ey, epsi, v
-        @variable( mdl, u_Ol[1:N,1:2])
+        @variable( mdl, z_Ol[1:(N+1),1:4], start = 0)          # z = s, ey, epsi, v
+        @variable( mdl, u_Ol[1:N,1:2], start = 0)
 
         # Set bounds (hard constraints)
         for i=1:2
@@ -234,7 +225,7 @@ type MpcModel_pF
             end
         end
 
-        @NLparameter(mdl, z0[i=1:4] == z_Init[i])
+        @NLparameter(mdl, z0[i=1:4] == 0)
         @NLparameter(mdl, uCurr[i=1:2] == 0)
 
         @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0)
@@ -244,6 +235,7 @@ type MpcModel_pF
         @NLexpression(mdl, dsdt[i = 1:N], z_Ol[i,4]*cos(z_Ol[i,3]+bta[i])/(1-z_Ol[i,2]*c[i]))
 
         # System dynamics
+        setvalue(z0[4],v_ref)
         @NLconstraint(mdl, [i=1:4], z_Ol[1,i] == z0[i])         # initial condition
         for i=1:N
             @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*dsdt[i]  )                                                # s
@@ -270,20 +262,19 @@ type MpcModel_pF
         @NLobjective(mdl, Min, costZ + derivCost + controlCost)
 
         # create first artificial solution (for warm start)
-        # setvalue(z_Ol[1,:],z_Init')
-        # for i=2:N+1
-        #    setvalue(z_Ol[i,:],[0 0 0 v_ref])
-        # end
+        setvalue(uCurr, [0.15, 0])
+        for i=1:N+1
+            setvalue(z_Ol[i,:],[(i-1)*dt*v_ref 0 0 v_ref])
+        end
+        for i=1:N
+            setvalue(u_Ol[i,:],[0.15 0])
+        end
         # First solve
-        #JuMP.build(mdl)
-        #println("Initialized path following controller. Starting first solve...")
-        #println("z0 = $(getvalue(z0))")
-        #println("Initial guess z: $(getvalue(z_Ol))")
-        #println(mdl)
-        sol_status = solve(mdl)
-        #println("Solved with status $sol_status")
-        #println("Solution_z = $(getvalue(z_Ol))")
-        #println("Solution_u = $(getvalue(u_Ol))")
+        sol_stat=solve(mdl)
+        println("Finished solve 1: $sol_stat")
+        sol_stat=solve(mdl)
+        println("Finished solve 2: $sol_stat")
+        
         m.mdl = mdl
         m.z0 = z0
         m.coeff = coeff

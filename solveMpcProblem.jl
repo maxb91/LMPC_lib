@@ -48,13 +48,17 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # Print information
     println("--------------- MPC START -----------------------------------------------")
+    println("z0             = $(zCurr')")
+    println("c_Vx           = $(mpcCoeff.c_Vx)")
+    println("c_Vy           = $(mpcCoeff.c_Vy)")
+    println("c_Psi          = $(mpcCoeff.c_Psi)")
     println("Solved, status = $sol_status")
-    println("Predicting until z = $(sol_z[end,6])")
-    println("termCost:      $(mpcSol.cost[2])")
-    println("termConst:     $(mpcSol.cost[3])")
-    println("derivCost:     $(mpcSol.cost[4])")
-    println("controlCost:   $(mpcSol.cost[5])")
-    println("laneCost:      $(mpcSol.cost[6])")
+    println("Predict. to s  = $(sol_z[end,6])")
+    println("termCost       = $(mpcSol.cost[2])")
+    println("termConst      = $(mpcSol.cost[3])")
+    println("derivCost      = $(mpcSol.cost[4])")
+    println("controlCost    = $(mpcSol.cost[5])")
+    println("laneCost       =  $(mpcSol.cost[6])")
     println("--------------- MPC END ------------------------------------------------")
     nothing
 end
