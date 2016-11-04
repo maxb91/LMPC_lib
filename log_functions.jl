@@ -59,7 +59,7 @@ end
 function pos_info_callback(msg::pos_info,pos_info_log::Measurements)
     pos_info_log.t[pos_info_log.i]      = to_sec(get_rostime())
     pos_info_log.t_msg[pos_info_log.i]  = to_sec(msg.header.stamp)
-    pos_info_log.z[pos_info_log.i,:]    = [msg.s;msg.ey;msg.epsi;msg.v;msg.s_start;msg.x;msg.y;msg.v_x;msg.v_y;msg.psi;msg.psiDot]
+    pos_info_log.z[pos_info_log.i,:]    = [msg.s;msg.ey;msg.epsi;msg.v;msg.s_start;msg.x;msg.y;msg.v_x;msg.v_y;msg.psi;msg.psiDot;msg.x_raw;msg.y_raw;msg.psi_raw;msg.v_raw;msg.psi_drift]
     pos_info_log.i += 1
     nothing
 end
@@ -67,7 +67,7 @@ end
 function vel_est_callback(msg::Vel_est,vel_est_log::Measurements)
     vel_est_log.t[vel_est_log.i]      = to_sec(get_rostime())
     vel_est_log.t_msg[vel_est_log.i]  = to_sec(msg.header.stamp)
-    vel_est_log.z[vel_est_log.i]      = convert(Float64,msg.vel_est)
+    vel_est_log.z[vel_est_log.i,:]    = [msg.vel_est,msg.vel_fl,msg.vel_fr,msg.vel_bl,msg.vel_br]
     vel_est_log.i += 1
     nothing
 end
