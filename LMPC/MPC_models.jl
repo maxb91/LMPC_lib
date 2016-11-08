@@ -167,15 +167,11 @@ type MpcModel_pF
     z_Ol::Array{JuMP.Variable,2}
     u_Ol::Array{JuMP.Variable,2}
 
-    dsdt::Array{JuMP.NonlinearExpression,1}
-    bta::Array{JuMP.NonlinearExpression,1}
-    c::Array{JuMP.NonlinearExpression,1}
-
     derivCost::JuMP.NonlinearExpression
     costZ::JuMP.NonlinearExpression
     controlCost::JuMP.NonlinearExpression
 
-    uCurr::Array{JuMP.NonlinearParameter,1}
+    uPrev::Array{JuMP.NonlinearParameter,2}
 
     function MpcModel_pF(mpcParams::MpcParams,modelParams::ModelParams,trackCoeff::TrackCoeff)
         println("Starting creation of pf model")
@@ -201,8 +197,8 @@ type MpcModel_pF
 
         # Create function-specific parameters
         z_Ref::Array{Float64,2}
-        z_Ref           = cat(2,zeros(N+1,3),v_ref*ones(N+1,1))       # Reference trajectory: path following -> stay on line and keep constant velocity
-        u_Ref           = zeros(N,2)
+        z_Ref       = cat(2,zeros(N+1,3),v_ref*ones(N+1,1))       # Reference trajectory: path following -> stay on line and keep constant velocity
+        u_Ref       = zeros(N,2)
 
         # Create Model
         mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,linear_solver="ma57",print_user_options="yes"))
@@ -226,18 +222,22 @@ type MpcModel_pF
         end
 
         @NLparameter(mdl, z0[i=1:4] == 0)
-        @NLparameter(mdl, uCurr[i=1:2] == 0)
+        @NLparameter(mdl, uPrev[1:10,1:2] == 0)
 
         @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0)
 
         @NLexpression(mdl, c[i = 1:N],    sum{coeff[j]*z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + coeff[n_poly_curv+1])
-        @NLexpression(mdl, bta[i = 1:N],  atan( L_a / (L_a + L_b) * ( u_Ol[i,2] ) ) )
-        @NLexpression(mdl, dsdt[i = 1:N], z_Ol[i,4]*cos(z_Ol[i,3]+bta[i])/(1-z_Ol[i,2]*c[i]))
 
         # System dynamics
         setvalue(z0[4],v_ref)
         @NLconstraint(mdl, [i=1:4], z_Ol[1,i] == z0[i])         # initial condition
         for i=1:N
+            if i<=2
+                @NLexpression(mdl, bta[i],  atan( L_a / (L_a + L_b) * ( uPrev[3-i,2] ) ) )
+            else
+                @NLexpression(mdl, bta[i],  atan( L_a / (L_a + L_b) * ( u_Ol[i-2,2] ) ) )
+            end
+            @NLexpression(mdl, dsdt[i], z_Ol[i,4]*cos(z_Ol[i,3]+bta[i])/(1-z_Ol[i,2]*c[i]))
             @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*dsdt[i]  )                                                # s
             @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + dt*z_Ol[i,4]*sin(z_Ol[i,3]+bta[i])  )                        # ey
             @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + dt*(z_Ol[i,4]/L_a*sin(bta[i])-dsdt[i]*c[i])  )               # epsi
@@ -248,11 +248,13 @@ type MpcModel_pF
         # Derivative cost
         # ---------------------------------
         @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{(z_Ol[i,j]-z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
-                                            sum{QderivU[j]*((uCurr[j]-u_Ol[1,j])^2+sum{(u_Ol[i,j]-u_Ol[i+1,j])^2,i=1:N-1}),j=1:2})
+                                            QderivU[1]*((uPrev[1,1]-u_Ol[1,1])^2+sum{(u_Ol[i,1]-u_Ol[i+1,1])^2,i=1:N-1})+
+                                            QderivU[2]*((uPrev[1,2]-u_Ol[1,2])^2+sum{(u_Ol[i,2]-u_Ol[i+1,2])^2,i=1:N-3}))
 
         # Control Input cost
         # ---------------------------------
-        @NLexpression(mdl, controlCost, 0.5*sum{R[j]*sum{(u_Ol[i,j])^2,i=1:N},j=1:2})
+        @NLexpression(mdl, controlCost, 0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
+                                        0.5*R[2]*sum{(u_Ol[i,2])^2,i=1:N-2})
 
         # State cost
         # ---------------------------------
@@ -262,7 +264,6 @@ type MpcModel_pF
         @NLobjective(mdl, Min, costZ + derivCost + controlCost)
 
         # create first artificial solution (for warm start)
-        setvalue(uCurr, [0.15, 0])
         for i=1:N+1
             setvalue(z_Ol[i,:],[(i-1)*dt*v_ref 0 0 v_ref])
         end
@@ -280,10 +281,10 @@ type MpcModel_pF
         m.coeff = coeff
         m.z_Ol = z_Ol
         m.u_Ol = u_Ol
-        m.dsdt = dsdt
-        m.bta = bta
-        m.c = c
-        m.uCurr = uCurr
+        #m.dsdt = dsdt
+        #m.bta = bta
+        #m.c = c
+        m.uPrev = uPrev
         m.derivCost = derivCost
         m.costZ = costZ
         m.controlCost = controlCost

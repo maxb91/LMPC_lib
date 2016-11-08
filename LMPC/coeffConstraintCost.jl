@@ -132,7 +132,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
     for i=1:2   
             dist_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target
-            bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-1,pLength+1))    # build a vector that starts at the distance and
+            bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and
                                                                                                     # decreases in equal steps
             coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end

@@ -58,12 +58,12 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     println("termConst      = $(mpcSol.cost[3])")
     println("derivCost      = $(mpcSol.cost[4])")
     println("controlCost    = $(mpcSol.cost[5])")
-    println("laneCost       =  $(mpcSol.cost[6])")
+    println("laneCost       = $(mpcSol.cost[6])")
     println("--------------- MPC END ------------------------------------------------")
     nothing
 end
 
-function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::MpcParams,trackCoeff::TrackCoeff,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uCurr::Array{Float64})
+function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::MpcParams,trackCoeff::TrackCoeff,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
 
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
@@ -74,7 +74,7 @@ function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::M
 
     # Update current initial condition, curvature and previous input
     setvalue(mdl.z0,zCurr)
-    setvalue(mdl.uCurr,uCurr[:])
+    setvalue(mdl.uPrev,uPrev)
     setvalue(mdl.coeff,coeffCurvature)
 
     # Solve Problem and return solution
