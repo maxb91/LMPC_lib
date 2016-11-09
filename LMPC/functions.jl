@@ -77,7 +77,6 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     modelParams.I_z             = 0.24
     modelParams.c_f             = 0.63                 # friction coefficient: xDot = - c_f*xDot² (aerodynamic+tire)
 
-    posInfo.s_start             = 0.0
     posInfo.s_target            = 5.0
 
     oldTraj.oldTraj             = NaN*ones(buffersize,6,20)

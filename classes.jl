@@ -50,10 +50,9 @@ type MpcParams          # parameters for MPC solver
 end
 
 type PosInfo            # current position information
-    s_start::Float64
     s::Float64
     s_target::Float64
-    PosInfo(s_start=0,s=0,s_target=0) = new(s_start,s,s_target)
+    PosInfo(s=0,s_target=0) = new(s,s_target)
 end
 
 type MpcSol             # MPC solution output

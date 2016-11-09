@@ -24,7 +24,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # coeffCost
 
     # Read Inputs
-    s_start         = posInfo.s_start
     s               = posInfo.s
     s_target        = posInfo.s_target
 
@@ -65,7 +64,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     s_forinterpy::Array{Float64}
 
     # Compute the total s (current position along track)
-    s_total = (s_start + s) % s_target
+    s_total = s % s_target
 
     # Compute the index
     DistS = ( s_total - oldS ).^2
@@ -75,7 +74,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
 
     # Create the vectors used for the interpolation
-    # bS_vector contains the s-values for later interpolation (total s, s_start is subtracted later)
+    # bS_vector contains the s-values for later interpolation
     bS_Vector       = zeros(pLength+1,2)
     for i=1:pLength+1
         bS_Vector[i,1] = oldS[vec_range[1][i]]
@@ -94,8 +93,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # The states are parametrized with resprect to the curvilinear abscissa,
     # so we select the point used for the interpolation. Need to subtract an
     # offset to be coherent with the MPC formulation
-    s_forinterpy   = bS_Vector - s_start
-    if s_total - s_start < 0
+    s_forinterpy   = bS_Vector
+    if s_total < 0
         s_forinterpy += s_target
     end
     # println("s_forinterpy[:,:]' = $(s_forinterpy[:,:]')")

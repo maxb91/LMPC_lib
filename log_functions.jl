@@ -67,7 +67,7 @@ end
 function vel_est_callback(msg::Vel_est,vel_est_log::Measurements)
     vel_est_log.t[vel_est_log.i]      = to_sec(get_rostime())
     vel_est_log.t_msg[vel_est_log.i]  = to_sec(msg.header.stamp)
-    vel_est_log.z[vel_est_log.i]      = [msg.vel_est;msg.vel_fl;msg.vel_fr;msg.vel_bl;msg.vel_br]
+    vel_est_log.z[vel_est_log.i,:]    = [msg.vel_est,msg.vel_fl,msg.vel_fr,msg.vel_bl,msg.vel_br]
     vel_est_log.i += 1
     nothing
 end
