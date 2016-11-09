@@ -80,9 +80,10 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     posInfo.s_start             = 0.0
     posInfo.s_target            = 5.0
 
-    oldTraj.oldTraj             = NaN*ones(buffersize,6,2)
-    oldTraj.oldInput            = NaN*ones(buffersize,2,2)
-    oldTraj.oldCost             = ones(Int64,2)                   # dummies for initialization
+    oldTraj.oldTraj             = NaN*ones(buffersize,6,20)
+    oldTraj.oldInput            = NaN*ones(buffersize,2,20)
+    oldTraj.oldTimes            = NaN*ones(buffersize,1,20)
+    oldTraj.oldCost             = ones(Int64,20)                   # dummies for initialization
     oldTraj.prebuf              = 30
     oldTraj.postbuf             = 30
 
