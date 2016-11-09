@@ -46,25 +46,28 @@ end
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
     mpcParams.N                 = 10
-    mpcParams.Q_term            = 0.1*[0.01,1.0,1.0,1.0,1.0]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
+    mpcParams.Q                 = [5.0,0.0,0.0,0.1,10.0,0.0]    # Q (only for path following mode)
+    mpcParams.vPathFollowing    = 1.0                           # reference speed for first lap of path following
+    mpcParams.Q_term            = 0.1*[0.01,1.0,1.0,1.0,1.0]    # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[1,1]                     # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 1.0*[1,10]                    # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.1                           # scaling of Q-function
 
     mpcParams_pF.N              = 10
-    mpcParams_pF.Q              = [0.0,10.0,0.0,1.0]
+    mpcParams_pF.Q              = [0.0,10.0,0.1,5.0]
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
     mpcParams_pF.QderivU        = 1.0*[1,10]                 # cost matrix for derivative cost of inputs
-    mpcParams_pF.vPathFollowing = 0.5                       # reference speed for first lap of path following
+    mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
+    mpcParams_pF.delay_df       = 2                         # steering delay (number of steps)
 
     trackCoeff.nPolyCurvature   = 8                         # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.width            = 0.6                       # width of the track (0.5m)
 
-    modelParams.u_lb            = ones(mpcParams.N,1) * [-0.2  -pi/6]                           # lower bounds on steering
-    modelParams.u_ub            = ones(mpcParams.N,1) * [1.2   pi/6]                            # upper bounds
+    modelParams.u_lb            = ones(mpcParams.N,1) * [-0.2  -0.3]                           # lower bounds on steering
+    modelParams.u_ub            = ones(mpcParams.N,1) * [2.0   0.3]                            # upper bounds
     modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                   # lower bounds on states
     modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  2.0]                   # upper bounds
     modelParams.l_A             = 0.125

@@ -21,6 +21,7 @@ type MpcModel
     costZTerm::JuMP.NonlinearExpression
     derivCost::JuMP.NonlinearExpression
     controlCost::JuMP.NonlinearExpression
+    costZ::JuMP.NonlinearExpression
 
     uCurr::Array{JuMP.NonlinearParameter,1}
 
@@ -36,6 +37,7 @@ type MpcModel
         z_ub = modelParams.z_ub
 
         N               = mpcParams.N
+        Q               = mpcParams.Q
         Q_term          = mpcParams.Q_term
         R               = mpcParams.R
         order           = mpcCoeff.order       # polynomial order of terminal constraints and cost approximation
@@ -47,6 +49,13 @@ type MpcModel
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
         
+        # Path following mode:
+        # Create function-specific parameters
+        v_ref       = mpcParams.vPathFollowing
+        z_Ref::Array{Float64,2}
+        z_Ref       = cat(2,v_ref*ones(N+1,1),zeros(N+1,5))       # Reference trajectory: path following -> stay on line and keep constant velocity
+        u_Ref       = zeros(N,2)
+
         mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.1))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
         @variable( mdl, z_Ol[1:(N+1),1:6], start = 0)
@@ -54,9 +63,9 @@ type MpcModel
         @variable( mdl, 0 <= ParInt <= 1,  start = 0)
 
         z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                      # lower bounds on states
-        z_ub_6s = ones(mpcParams.N+1,1)*[3.0  Inf  Inf  Inf  Inf  Inf]                      # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [-1.0  -pi/6]                                       # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [5.0    pi/6]                                       # upper bounds
+        z_ub_6s = ones(mpcParams.N+1,1)*[2.0  Inf  Inf  Inf  Inf  Inf]                      # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [-1.0  -0.3]                                       # lower bounds on steering
+        u_ub_6s = ones(mpcParams.N,1) * [3.0    0.3]                                       # upper bounds
 
         for i=1:2
             for j=1:N
@@ -93,12 +102,12 @@ type MpcModel
 
         # System dynamics
         for i=1:N
-            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*u_Ol[i,1])                             # xDot
+            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*u_Ol[i,1])                                                   # xDot
             @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + c_Vy[1]*z_Ol[i,2]/z_Ol[i,1] + c_Vy[2]*z_Ol[i,1]*z_Ol[i,3] + c_Vy[3]*z_Ol[i,3]/z_Ol[i,1] + c_Vy[4]*u_Ol[i,2]) # yDot
             @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*u_Ol[i,2])                            # psiDot
             @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(z_Ol[i,3]-dsdt[i]*c[i]))                                                                                 # ePsi
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4])+z_Ol[i,2]*cos(z_Ol[i,4])))                                                      # eY
-            @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )
+            @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
         end
 
         # Cost functions
@@ -127,8 +136,13 @@ type MpcModel
         @NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
                                       (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
         
+        # State cost (only for path following mode)
+        # ---------------------------------
+        @NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=2:N+1},i=1:6})    # Follow trajectory
+
         # Solve model once
-        @NLobjective(mdl, Min, derivCost + controlCost + laneCost + constZTerm + costZTerm)
+        #@NLobjective(mdl, Min, derivCost + controlCost + laneCost + constZTerm + costZTerm)
+        @NLobjective(mdl, Min, derivCost + controlCost + costZ)
         sol_stat=solve(mdl)
         println("Finished solve 1: $sol_stat")
         sol_stat=solve(mdl)
@@ -154,6 +168,7 @@ type MpcModel
         m.laneCost = laneCost
         m.constZTerm = constZTerm
         m.costZTerm  = costZTerm
+        m.costZ  = costZ
         return m
     end
 end
@@ -190,6 +205,7 @@ type MpcModel_pF
         R           = mpcParams.R
         QderivZ     = mpcParams.QderivZ::Array{Float64,1}
         QderivU     = mpcParams.QderivU::Array{Float64,1}
+        delay_df    = mpcParams.delay_df
 
         v_ref       = mpcParams.vPathFollowing
 
@@ -226,22 +242,22 @@ type MpcModel_pF
 
         @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0)
 
-        @NLexpression(mdl, c[i = 1:N],    sum{coeff[j]*z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + coeff[n_poly_curv+1])
+        @NLexpression(mdl, c[i = 1:N], sum{coeff[j]*z_Ol[i,1]^(n_poly_curv-j+1),j=1:n_poly_curv} + coeff[n_poly_curv+1])
 
         # System dynamics
         setvalue(z0[4],v_ref)
         @NLconstraint(mdl, [i=1:4], z_Ol[1,i] == z0[i])         # initial condition
         for i=1:N
-            if i<=2
-                @NLexpression(mdl, bta[i],  atan( L_a / (L_a + L_b) * ( uPrev[3-i,2] ) ) )
+            if i<=delay_df
+                @NLexpression(mdl, bta[i],  atan( L_a / (L_a + L_b) * tan( uPrev[delay_df+1-i,2] ) ) )
             else
-                @NLexpression(mdl, bta[i],  atan( L_a / (L_a + L_b) * ( u_Ol[i-2,2] ) ) )
+                @NLexpression(mdl, bta[i],  atan( L_a / (L_a + L_b) * tan( u_Ol[i-delay_df,2] ) ) )
             end
             @NLexpression(mdl, dsdt[i], z_Ol[i,4]*cos(z_Ol[i,3]+bta[i])/(1-z_Ol[i,2]*c[i]))
             @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*dsdt[i]  )                                                # s
             @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + dt*z_Ol[i,4]*sin(z_Ol[i,3]+bta[i])  )                        # ey
             @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + dt*(z_Ol[i,4]/L_a*sin(bta[i])-dsdt[i]*c[i])  )               # epsi
-            @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(u_Ol[i,1] - modelParams.c_f*abs(z_Ol[i,4]) * z_Ol[i,4])) # v
+            @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(u_Ol[i,1] - 1.0*z_Ol[i,4]))#modelParams.c_f*abs(z_Ol[i,4]) * z_Ol[i,4])) # v
         end
 
         # Cost definitions
@@ -249,12 +265,12 @@ type MpcModel_pF
         # ---------------------------------
         @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{(z_Ol[i,j]-z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
                                             QderivU[1]*((uPrev[1,1]-u_Ol[1,1])^2+sum{(u_Ol[i,1]-u_Ol[i+1,1])^2,i=1:N-1})+
-                                            QderivU[2]*((uPrev[1,2]-u_Ol[1,2])^2+sum{(u_Ol[i,2]-u_Ol[i+1,2])^2,i=1:N-3}))
+                                            QderivU[2]*((uPrev[1,2]-u_Ol[1,2])^2+sum{(u_Ol[i,2]-u_Ol[i+1,2])^2,i=1:N-delay_df-1}))
 
         # Control Input cost
         # ---------------------------------
         @NLexpression(mdl, controlCost, 0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
-                                        0.5*R[2]*sum{(u_Ol[i,2])^2,i=1:N-2})
+                                        0.5*R[2]*sum{(u_Ol[i,2])^2,i=1:N-delay_df})
 
         # State cost
         # ---------------------------------

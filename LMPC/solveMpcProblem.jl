@@ -44,7 +44,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
     #mpcSol.cost = zeros(6)
-    mpcSol.cost = [0,getvalue(mdl.costZTerm),getvalue(mdl.constZTerm),getvalue(mdl.derivCost),getvalue(mdl.controlCost),getvalue(mdl.laneCost)]
+    mpcSol.cost = [getvalue(mdl.costZ),getvalue(mdl.costZTerm),getvalue(mdl.constZTerm),getvalue(mdl.derivCost),getvalue(mdl.controlCost),getvalue(mdl.laneCost)]
 
     # Print information
     println("--------------- MPC START -----------------------------------------------")
