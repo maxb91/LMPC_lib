@@ -3,6 +3,9 @@
 type LapStatus
     currentLap::Int64       # current lap number
     currentIt::Int64        # current iteration in current lap
+    switchLap::Bool
+    nextLap::Bool
+    s_lapTrigger::Float64
 end
 
 # Structure of coeffConst:
@@ -28,10 +31,10 @@ type OldTrajectory      # information about previous trajectories
     oldInput::Array{Float64}            # contains all inputs
     oldTimes::Array{Float64}            # contains times related to states and inputs
     oldCost::Array{Int64}               # contains costs of laps
-    count::Int64                        # contains the counter in the current lap
+    count::Array{Int64}                 # contains the counter for each lap
     prebuf::Int64
     postbuf::Int64
-    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldTimes=Float64[],oldCost=Float64[],count=1,prebuf=50,postbuf=50) = new(oldTraj,oldInput,oldTimes,oldCost,count,prebuf,postbuf)
+    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldTimes=Float64[],oldCost=Float64[],count=Int64[],prebuf=50,postbuf=50) = new(oldTraj,oldInput,oldTimes,oldCost,count,prebuf,postbuf)
 end
 
 type MpcParams          # parameters for MPC solver

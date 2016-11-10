@@ -79,9 +79,10 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
 
     posInfo.s_target            = 5.0
 
-    oldTraj.oldTraj             = NaN*ones(buffersize,6,20)
-    oldTraj.oldInput            = NaN*ones(buffersize,2,20)
-    oldTraj.oldTimes            = NaN*ones(buffersize,1,20)
+    oldTraj.oldTraj             = NaN*ones(buffersize,6,5)
+    oldTraj.oldInput            = NaN*ones(buffersize,2,5)
+    oldTraj.oldTimes            = NaN*ones(buffersize,5)
+    oldTraj.count               = ones(5)
     oldTraj.oldCost             = ones(Int64,20)                   # dummies for initialization
     oldTraj.prebuf              = 30
     oldTraj.postbuf             = 30
@@ -89,7 +90,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcCoeff.order              = 5
     mpcCoeff.coeffCost          = zeros(mpcCoeff.order+1,2)
     mpcCoeff.coeffConst         = zeros(mpcCoeff.order+1,2,5)
-    mpcCoeff.pLength            = 4*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
+    mpcCoeff.pLength            = 5*2*mpcParams.N        # small values here may lead to numerical problems since the functions are only approximated in a short horizon
     mpcCoeff.c_Vx               = zeros(3)
     mpcCoeff.c_Vy               = zeros(4)
     mpcCoeff.c_Psi              = zeros(3)
