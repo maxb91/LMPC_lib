@@ -105,7 +105,7 @@ type MpcModel
         for i=1:N
             if i<=2
                 @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + 0.1*(c_Vy[1]*z_Ol[i,2]/z_Ol[i,1] + c_Vy[2]*z_Ol[i,1]*z_Ol[i,3] + c_Vy[3]*z_Ol[i,3]/z_Ol[i,1] + c_Vy[4]*uPrev[delay_df+1-i,2])) # yDot
-                @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + 0.1*(c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*u_Ol[i,2]))                            # psiDot
+                @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + 0.1*(c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*uPrev[delay_df+1-i,2]))                            # psiDot
             else
                 @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + 0.1*(c_Vy[1]*z_Ol[i,2]/z_Ol[i,1] + c_Vy[2]*z_Ol[i,1]*z_Ol[i,3] + c_Vy[3]*z_Ol[i,3]/z_Ol[i,1] + c_Vy[4]*u_Ol[i-delay_df,2])) # yDot
                 @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + 0.1*(c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*u_Ol[i-delay_df,2]))                            # psiDot
