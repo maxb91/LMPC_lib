@@ -15,7 +15,7 @@
 # i = 5 -> eY
 # i = 6 -> s
 
-function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uCurr::Array{Float64})
+function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
 
     # Load Parameters
     sol_status::Symbol
@@ -24,7 +24,7 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
 
     # Update current initial condition, curvature and System ID coefficients
     setvalue(mdl.z0,zCurr)
-    setvalue(mdl.uCurr,uCurr[:])
+    setvalue(mdl.uPrev,uPrev)
     setvalue(mdl.c_Vx,mpcCoeff.c_Vx)            # System ID coefficients
     setvalue(mdl.c_Vy,mpcCoeff.c_Vy)
     setvalue(mdl.c_Psi,mpcCoeff.c_Psi)
