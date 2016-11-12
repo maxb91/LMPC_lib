@@ -53,12 +53,13 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
     mpcParams.QderivU           = 1.0*[1,10]                    # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.1                           # scaling of Q-function
+    mpcParams.delay_df          = 2                             # seering delay
 
     mpcParams_pF.N              = 10
     mpcParams_pF.Q              = [0.0,10.0,0.1,5.0]
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
-    mpcParams_pF.QderivU        = 1.0*[1,10]                 # cost matrix for derivative cost of inputs
+    mpcParams_pF.QderivU        = 1.0*[1,10]                # cost matrix for derivative cost of inputs
     mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
     mpcParams_pF.delay_df       = 2                         # steering delay (number of steps)
 
@@ -79,10 +80,10 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
 
     posInfo.s_target            = 5.0
 
-    oldTraj.oldTraj             = NaN*ones(buffersize,6,5)
-    oldTraj.oldInput            = NaN*ones(buffersize,2,5)
-    oldTraj.oldTimes            = NaN*ones(buffersize,5)
-    oldTraj.count               = ones(5)
+    oldTraj.oldTraj             = NaN*ones(buffersize,6,15)
+    oldTraj.oldInput            = NaN*ones(buffersize,2,15)
+    oldTraj.oldTimes            = NaN*ones(buffersize,15)
+    oldTraj.count               = ones(15)
     oldTraj.oldCost             = ones(Int64,20)                   # dummies for initialization
     oldTraj.prebuf              = 30
     oldTraj.postbuf             = 30

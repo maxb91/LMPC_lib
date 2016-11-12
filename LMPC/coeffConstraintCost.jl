@@ -16,7 +16,7 @@
 # z[5] = eY
 # z[6] = s
 
-function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams,currentTraj::Array{Float64},currentInput::Array{Float64},lapStatus::LapStatus)
+function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo::PosInfo, mpcParams::MpcParams,lapStatus::LapStatus)
     # this computes the coefficients for the cost and constraints
 
     # Outputs: 
@@ -27,7 +27,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     println("Startint coeff Const cost")
     s               = posInfo.s
     s_target        = posInfo.s_target
-
 
     # Parameters
     N               = mpcParams.N
