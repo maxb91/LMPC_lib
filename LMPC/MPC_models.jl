@@ -57,7 +57,7 @@ type MpcModel
         z_Ref       = cat(2,v_ref*ones(N+1,1),zeros(N+1,5))       # Reference trajectory: path following -> stay on line and keep constant velocity
         u_Ref       = zeros(N,2)
 
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.1))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.07))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
         @variable( mdl, z_Ol[1:(N+1),1:6], start = 0)
         @variable( mdl, u_Ol[1:N,1:2],     start = 0)
@@ -66,7 +66,7 @@ type MpcModel
         z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                      # lower bounds on states
         z_ub_6s = ones(mpcParams.N+1,1)*[2.0  Inf  Inf  Inf  Inf  Inf]                      # upper bounds
         u_lb_6s = ones(mpcParams.N,1) * [-1.0  -0.3]                                       # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [3.0    0.3]                                       # upper bounds
+        u_ub_6s = ones(mpcParams.N,1) * [1.5    0.3]                                       # upper bounds
 
         for i=1:2
             for j=1:N
@@ -103,15 +103,15 @@ type MpcModel
 
         # System dynamics
         for i=1:N
-            if i<=2
+            if i<=delay_df
                 @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + c_Vy[1]*z_Ol[i,2]/z_Ol[i,1] + c_Vy[2]*z_Ol[i,1]*z_Ol[i,3] + c_Vy[3]*z_Ol[i,3]/z_Ol[i,1] + c_Vy[4]*uPrev[delay_df+1-i,2]) # yDot
                 @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*uPrev[delay_df+1-i,2])                            # psiDot
             else
                 @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + c_Vy[1]*z_Ol[i,2]/z_Ol[i,1] + c_Vy[2]*z_Ol[i,1]*z_Ol[i,3] + c_Vy[3]*z_Ol[i,3]/z_Ol[i,1] + c_Vy[4]*u_Ol[i-delay_df,2]) # yDot
                 @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*u_Ol[i-delay_df,2])                            # psiDot
             end
-            #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*u_Ol[i,1])                                                   # xDot
-            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(u_Ol[i,1] - 1.0*z_Ol[i,1]))
+            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*u_Ol[i,1])                                                   # xDot
+            #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(u_Ol[i,1] - 0.5*z_Ol[i,1]))
             @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(z_Ol[i,3]-dsdt[i]*c[i]))                                                                                 # ePsi
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4])+z_Ol[i,2]*cos(z_Ol[i,4])))                                                      # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
@@ -148,6 +148,7 @@ type MpcModel
         # State cost (only for path following mode)
         # ---------------------------------
         @NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=2:N+1},i=1:6})    # Follow trajectory
+        #@NLexpression(mdl, costZ, 0.5*(Q[1]*((z_Ol[j,1]+z_Ol[j,2])^2 + Q[4]*z_Ol[j,4]^2
 
         # Solve model once
         #@NLobjective(mdl, Min, derivCost + controlCost + laneCost + constZTerm + costZTerm)
@@ -226,7 +227,7 @@ type MpcModel_pF
         u_Ref       = zeros(N,2)
 
         # Create Model
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.07))#,linear_solver="ma57",print_user_options="yes"))
 
         # Create variables (these are going to be optimized)
         @variable( mdl, z_Ol[1:(N+1),1:4], start = 0)          # z = s, ey, epsi, v
@@ -266,7 +267,7 @@ type MpcModel_pF
             @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*dsdt[i]  )                                                # s
             @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + dt*z_Ol[i,4]*sin(z_Ol[i,3]+bta[i])  )                        # ey
             @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + dt*(z_Ol[i,4]/L_a*sin(bta[i])-dsdt[i]*c[i])  )               # epsi
-            @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(u_Ol[i,1] - 1.0*z_Ol[i,4]))#modelParams.c_f*abs(z_Ol[i,4]) * z_Ol[i,4])) # v
+            @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(u_Ol[i,1] - 0.5*z_Ol[i,4]))#modelParams.c_f*abs(z_Ol[i,4]) * z_Ol[i,4])) # v
         end
 
         # Cost definitions

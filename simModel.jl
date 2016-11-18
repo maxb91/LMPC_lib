@@ -10,16 +10,16 @@ function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     zNext::Array{Float64}
     L_a = modelParams.l_A
     L_b = modelParams.l_B
-    c = ([z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]        # Polynomial
+    c = ([z[1]^8 z[1]^7 z[1]^6 z[1]^5 z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]        # Polynomial
 
     bta = atan(L_a/(L_a+L_b)*tan(u[2]+abs(u[2])*u[2]))
     dsdt = z[4]*cos(z[3]+bta)/(1-z[2]*c)
 
-    zNext = z
-    zNext[1] = z[1] + dt*dsdt
-    zNext[2] = z[2] + dt*z[4] * sin(z[3] + bta)
-    zNext[3] = z[3] + dt*(z[4]/L_a*sin(bta)-dsdt*c)
-    zNext[4] = z[4] + dt*(u[1] - modelParams.c_f*abs(z[4])*z[4])
+    zNext = copy(z)
+    zNext[1] = z[1] + dt*dsdt                               # s
+    zNext[2] = z[2] + dt*z[4] * sin(z[3] + bta)             # eY
+    zNext[3] = z[3] + dt*(z[4]/L_a*sin(bta)-dsdt*c)         # ePsi
+    zNext[4] = z[4] + dt*(u[1] - modelParams.c_f*z[4])      # v
 
     return zNext
 end
@@ -66,7 +66,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     dsdt = (z[1]*cos(z[4]) - z[2]*sin(z[4]))/(1-z[5]*c)
 
     zNext = copy(z)
-    zNext[1] = z[1] + dt * (z[7] + z[2]*z[3] - c_f*z[1]^2*sign(z[1]))       # xDot
+    zNext[1] = z[1] + dt * (z[7] + z[2]*z[3] - c_f*z[1])       # xDot
     zNext[2] = z[2] + dt * (2/m*(FyF*cos(z[8]) + FyR) - z[3]*z[1])          # yDot
     zNext[3] = z[3] + dt * (2/I_z*(L_f*FyF - L_r*FyR))                      # psiDot
     zNext[4] = z[4] + dt * (z[3]-dsdt*c)                                    # ePsi

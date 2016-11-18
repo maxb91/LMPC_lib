@@ -45,22 +45,22 @@ end
 
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
-    mpcParams.N                 = 10
-    mpcParams.Q                 = [5.0,0.0,0.0,0.1,10.0,0.0]    # Q (only for path following mode)
-    mpcParams.vPathFollowing    = 1.0                           # reference speed for first lap of path following
+    mpcParams.N                 = 15
+    mpcParams.Q                 = [1.0,0.0,0.0,0.1,10.0,0.0]    # Q (only for path following mode)
+    mpcParams.vPathFollowing    = 0.8                           # reference speed for first lap of path following
     mpcParams.Q_term            = 0.1*[0.01,1.0,1.0,1.0,1.0]    # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[1.0,1.0]                   # put weights on a and d_f
     mpcParams.QderivZ           = 0.0*[0,0,0.1,0,0,0]           # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[1,10]                    # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 1.0*[1,10]                     # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.1                           # scaling of Q-function
-    mpcParams.delay_df          = 2                             # seering delay
+    mpcParams.delay_df          = 2                             # steering delay
 
-    mpcParams_pF.N              = 10
-    mpcParams_pF.Q              = [0.0,10.0,0.1,5.0]
+    mpcParams_pF.N              = 15
+    mpcParams_pF.Q              = [0.0,10.0,0.1,1.0]
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
     mpcParams_pF.QderivU        = 1.0*[1,10]                # cost matrix for derivative cost of inputs
-    mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
+    mpcParams_pF.vPathFollowing = 0.8                       # reference speed for first lap of path following
     mpcParams_pF.delay_df       = 2                         # steering delay (number of steps)
 
     trackCoeff.nPolyCurvature   = 8                         # 4th order polynomial for curvature approximation
@@ -68,15 +68,15 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     trackCoeff.width            = 0.6                       # width of the track (0.5m)
 
     modelParams.u_lb            = ones(mpcParams.N,1) * [-0.2  -0.3]                           # lower bounds on steering
-    modelParams.u_ub            = ones(mpcParams.N,1) * [2.0   0.3]                            # upper bounds
+    modelParams.u_ub            = ones(mpcParams.N,1) * [1.0   0.3]                            # upper bounds
     modelParams.z_lb            = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                   # lower bounds on states
-    modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  2.0]                   # upper bounds
+    modelParams.z_ub            = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  1.5]                   # upper bounds
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125
-    modelParams.dt              = 0.1
+    modelParams.dt              = 0.1                   # sampling time, also controls the control loop, affects delay_df and Qderiv
     modelParams.m               = 1.98
     modelParams.I_z             = 0.24
-    modelParams.c_f             = 0.63                 # friction coefficient: xDot = - c_f*xDot² (aerodynamic+tire)
+    modelParams.c_f             = 0.5                   # friction coefficient: xDot = - c_f*xDot² (aerodynamic+tire)
 
     posInfo.s_target            = 5.0
 
