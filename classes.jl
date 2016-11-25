@@ -3,6 +3,9 @@
 type LapStatus
     currentLap::Int64       # current lap number
     currentIt::Int64        # current iteration in current lap
+    switchLap::Bool
+    nextLap::Bool
+    s_lapTrigger::Float64
 end
 
 # Structure of coeffConst:
@@ -24,12 +27,14 @@ type MpcCoeff           # coefficients for trajectory approximation
 end
 
 type OldTrajectory      # information about previous trajectories
-    oldTraj::Array{Float64}
-    oldInput::Array{Float64}
-    oldCost::Array{Int64}
+    oldTraj::Array{Float64}             # contains all states over all laps
+    oldInput::Array{Float64}            # contains all inputs
+    oldTimes::Array{Float64}            # contains times related to states and inputs
+    oldCost::Array{Int64}               # contains costs of laps
+    count::Array{Int64}                 # contains the counter for each lap
     prebuf::Int64
     postbuf::Int64
-    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldCost=Float64[],prebuf=50,postbuf=50) = new(oldTraj,oldInput,oldCost,prebuf,postbuf)
+    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldTimes=Float64[],oldCost=Float64[],count=Int64[],prebuf=50,postbuf=50) = new(oldTraj,oldInput,oldTimes,oldCost,count,prebuf,postbuf)
 end
 
 type MpcParams          # parameters for MPC solver
@@ -43,14 +48,14 @@ type MpcParams          # parameters for MPC solver
     QderivZ::Array{Float64,1}
     QderivU::Array{Float64,1}
     Q_term_cost::Float64
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[],Q_term_cost=1.0) = new(N,nz,OrderCostCons,Q,Q_term,R,vPathFollowing,QderivZ,QderivU,Q_term_cost)
+    delay_df::Int64
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[],Q_term_cost=1.0,delay_df=2) = new(N,nz,OrderCostCons,Q,Q_term,R,vPathFollowing,QderivZ,QderivU,Q_term_cost,delay_df)
 end
 
 type PosInfo            # current position information
-    s_start::Float64
     s::Float64
     s_target::Float64
-    PosInfo(s_start=0,s=0,s_target=0) = new(s_start,s,s_target)
+    PosInfo(s=0,s_target=0) = new(s,s_target)
 end
 
 type MpcSol             # MPC solution output
