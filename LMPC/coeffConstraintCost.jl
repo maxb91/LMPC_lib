@@ -24,20 +24,13 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # coeffCost
 
     # Read Inputs
-    println("Startint coeff Const cost")
     s               = posInfo.s
     s_target        = posInfo.s_target
 
     # Parameters
-    N               = mpcParams.N
-    nz              = mpcParams.nz
-    R               = mpcParams.R
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
     delay_df        = mpcParams.delay_df
-
-    n_prev          = 30                            # number of points before current s for System ID
-    n_ahead         = 60                            # number of points ahead of current s for System ID
 
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
@@ -50,9 +43,9 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     oldePsi         = oldTraj.oldTraj[:,4,selected_laps]::Array{Float64,3}
     oldeY           = oldTraj.oldTraj[:,5,selected_laps]::Array{Float64,3}
     oldS            = oldTraj.oldTraj[:,6,selected_laps]::Array{Float64,3}
-    oldt            = oldTraj.oldTimes[:,selected_laps]::Array{Float64,2}
     olda            = oldTraj.oldInput[:,1,selected_laps]::Array{Float64,3}
     olddF           = oldTraj.oldInput[:,2,selected_laps]::Array{Float64,3}
+    #olddF           = smooth(olddF,5)
 
     N_points        = size(oldTraj.oldTraj,1)     # second dimension = length (=buffersize)
 
@@ -65,8 +58,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     vec_range::Tuple{UnitRange{Int64},UnitRange{Int64}}
     bS_Vector::Array{Float64}
     s_forinterpy::Array{Float64}
-
-    println("Reading values finished.")
 
     # Compute the total s (current position along track)
     s_total = s % s_target
@@ -89,12 +80,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         warn("Couldn't find a close point to current s.")
     end
 
-    # println("************************************** COEFFICIENTS **************************************")
-    # println("idx_s[1]  = $(idx_s[1]), idx_s[2] = $(idx_s[2])")
-    # println("s_total   = $s_total")
-    # println("bS_Vector[1,:] = $(bS_Vector[1,:]')")
-    # These matrices (above) contain two vectors each (for both old trajectories), stored in the 3rd dimension
-    
     # The states are parametrized with resprect to the curvilinear abscissa,
     # so we select the point used for the interpolation. Need to subtract an
     # offset to be coherent with the MPC formulation
@@ -119,12 +104,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         coeffConst[:,i,4]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
         coeffConst[:,i,5]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
     end
-
-    # xDotInterp = [s_forinterpy[:,1].^5 s_forinterpy[:,1].^4 s_forinterpy[:,1].^3 s_forinterpy[:,1].^2 s_forinterpy[:,1].^1 s_forinterpy[:,1].^0]*coeffConst[:,1,1]
-    # plot(s_forinterpy,oldxDot[vec_range[1]],"*",s_forinterpy,xDotInterp)
-    # title("xDotInterp")
-    # grid("on")
-    # readline()
 
     # Finished with calculating the constraint coefficients
     
@@ -159,12 +138,17 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # ADD 2-step-delay to sysID
     # ************************
     # collect indices for system ID
-    n_sys_ID_prev = 5           # steps of sysID before current point
-    n_sys_ID_post = 10          # steps of sysID after current point
+    n_sys_ID_prev = 20              # steps of sysID before current point in previous laps
+    n_sys_ID_post = 60              # steps of sysID after current point in previous laps
+    n_sys_ID_prev_c = 30            # steps of sysID before current point in current lap
+
     sysID_idx_diff = idx_s[1]-n_sys_ID_prev*5-1 + (1:5:(n_sys_ID_prev+n_sys_ID_post+1)*5)         # these are the indices that are used for differences
     sysID_idx = sysID_idx_diff[1:end-1]
 
-    sysID_idx_diff_c = cC - (n_sys_ID_prev+1)*5-1 + (1:5:(n_sys_ID_prev+1)*5)
+    sysID_idx_diff2 = idx_s[2]-n_sys_ID_prev*5-1 + (1:5:(n_sys_ID_prev+n_sys_ID_post+1)*5)         # these are the indices that are used for differences
+    sysID_idx2 = sysID_idx_diff2[1:end-1]
+
+    sysID_idx_diff_c = cC - (n_sys_ID_prev_c+1)*5-1 + (1:5:(n_sys_ID_prev_c+1)*5)
     sysID_idx_c = sysID_idx_diff_c[1:end-1]
 
     sz1 = size(sysID_idx,1)
@@ -172,81 +156,52 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     sz = sz1 + sz2
 
     # psiDot
-    y_psi = zeros(sz*5)
-    A_psi = zeros(sz*5,3)
+    y_psi = zeros((2*sz1+sz2)*5)
+    A_psi = zeros((2*sz1+sz2)*5,3)
     for i=0:4
         y_psi[(1:sz1)+i*sz1]            = diff(oldpsiDot[sysID_idx_diff+i])
-        A_psi[(1:sz1)+i*sz1,:]          = [oldpsiDot[sysID_idx+i]./oldxDot[sysID_idx+i] oldyDot[sysID_idx+i]./oldxDot[sysID_idx+i] olddF[sysID_idx+i-delay_df*5]]
+        A_psi[(1:sz1)+i*sz1,:]          = [oldpsiDot[sysID_idx+i]./oldxDot[sysID_idx+i] oldyDot[sysID_idx+i]./oldxDot[sysID_idx+i] olddF[sysID_idx+i]]
         y_psi[(1:sz2)+i*sz2+5*sz1]      = diff(oldTraj.oldTraj[sysID_idx_diff_c+i,3,cL])
         A_psi[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,3,cL]./oldTraj.oldTraj[sysID_idx_c+i,1,cL] oldTraj.oldTraj[sysID_idx_c+i,2,cL]./oldTraj.oldTraj[sysID_idx_c+i,1,cL] oldTraj.oldInput[sysID_idx_c+i-delay_df*5,2,cL]]
+        y_psi[(1:sz1)+i*sz1+5*sz1+5*sz2]   = diff(oldpsiDot[sysID_idx_diff2+i])
+        A_psi[(1:sz1)+i*sz1+5*sz1+5*sz2,:] = [oldpsiDot[sysID_idx2+i]./oldxDot[sysID_idx2+i] oldyDot[sysID_idx2+i]./oldxDot[sysID_idx2+i] olddF[sysID_idx2+i]]
     end
 
-    #y_psi = diff(oldpsiDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])/0.02
-    #A_psi = [oldpsiDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] oldyDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] olddF[vec_range_ID[1]]]
-    #y_psi = cat(1,y_psi,diff(currentTraj[end-n_prev:end,3]))
-    #y_psi = cat(1,y_psi,diff(oldTraj.oldTraj[cC-n_prev:cC,3,cL])/0.02)
-    #A_psi = cat(1,A_psi,[currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
-    #A_psi = cat(1,A_psi,[oldTraj.oldTraj[vec_range_ID2,3,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,2,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldInput[vec_range_ID2,2,cL]])
-    
     # xDot
-    y_xDot = zeros(sz*5)
-    A_xDot = zeros(sz*5,3)
+    y_xDot = zeros((2*sz1+sz2)*5)
+    A_xDot = zeros((2*sz1+sz2)*5,4)
     for i=0:4
         y_xDot[(1:sz1)+i*sz1]            = diff(oldxDot[sysID_idx_diff+i])
-        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] olda[sysID_idx+i]]
+        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] oldxDot[sysID_idx+i] olda[sysID_idx+i]]
         y_xDot[(1:sz2)+i*sz2+5*sz1]      = diff(oldTraj.oldTraj[sysID_idx_diff_c+i,1,cL])
-        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldInput[sysID_idx_c+i,1,cL]]
+        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldTraj[sysID_idx_c+i,1,cL] oldTraj.oldInput[sysID_idx_c+i,1,cL]]
+        y_xDot[(1:sz1)+i*sz1+5*(sz1+sz2)]   = diff(oldxDot[sysID_idx_diff2+i])
+        A_xDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i] oldxDot[sysID_idx2+i] olda[sysID_idx2+i]]
     end
 
-    # xDot
-    #y_xDot = diff(oldxDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])/0.02
-    #A_xDot = [oldyDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]] olda[vec_range_ID[1]]]
-    #y_xDot = cat(1,y_xDot,diff(currentTraj[end-n_prev:end,1])
-    #y_xDot = cat(1,y_xDot,diff(oldTraj.oldTraj[cC-n_prev:cC,1,cL])/0.02)
-    #A_xDot = cat(1,A_xDot,[currentTraj[vec_range_ID2,2] currentTraj[vec_range_ID2,3] currentInput[vec_range_ID2,1]])
-    #A_xDot = cat(1,A_xDot,[oldTraj.oldTraj[vec_range_ID2,2,cL] oldTraj.oldTraj[vec_range_ID2,3,cL] oldTraj.oldInput[vec_range_ID2,1,cL]])
-    
     # yDot
-    y_yDot = zeros(sz*5)
-    A_yDot = zeros(sz*5,4)
+    y_yDot = zeros((2*sz1+sz2)*5)
+    A_yDot = zeros((2*sz1+sz2)*5,4)
     for i=0:4
         y_yDot[(1:sz1)+i*sz1]            = diff(oldyDot[sysID_idx_diff+i])
         A_yDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i]./oldxDot[sysID_idx+i] oldpsiDot[sysID_idx+i].*oldxDot[sysID_idx+i] oldpsiDot[sysID_idx+i]./oldxDot[sysID_idx+i] olddF[sysID_idx+i-delay_df*5]]
         y_yDot[(1:sz2)+i*sz2+5*sz1]      = diff(oldTraj.oldTraj[sysID_idx_diff_c+i,2,cL])
         A_yDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL]./oldTraj.oldTraj[sysID_idx_c+i,1,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL].*oldTraj.oldTraj[sysID_idx_c+i,1,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL]./oldTraj.oldTraj[sysID_idx_c+i,1,cL] oldTraj.oldInput[sysID_idx_c+i-delay_df*5,2]]
+        y_yDot[(1:sz1)+i*sz1+5*(sz1+sz2)]   = diff(oldyDot[sysID_idx_diff2+i])
+        A_yDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i]./oldxDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i].*oldxDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i]./oldxDot[sysID_idx2+i] olddF[sysID_idx2+i-delay_df*5]]
     end
-
-    # yDot
-    #y_yDot = diff(oldyDot[idx_s[1]-n_prev:idx_s[1]+n_ahead+1])/0.02
-    #A_yDot = [oldyDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]].*oldxDot[vec_range_ID[1]] oldpsiDot[vec_range_ID[1]]./oldxDot[vec_range_ID[1]] olddF[vec_range_ID[1]]]
-    #y_yDot = cat(1,y_yDot,diff(currentTraj[end-n_prev:end,2])
-    #y_yDot = cat(1,y_yDot,diff(oldTraj.oldTraj[cC-n_prev:cC,2,cL])/0.02)
-    #A_yDot = cat(1,A_yDot,[currentTraj[vec_range_ID2,2]./currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3].*currentTraj[vec_range_ID2,1] currentTraj[vec_range_ID2,3]./currentTraj[vec_range_ID2,1] currentInput[vec_range_ID2,2]])
-    #A_yDot = cat(1,A_yDot,[oldTraj.oldTraj[vec_range_ID2,2,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,3,cL].*oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,3,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldInput[vec_range_ID2,2]])
-
-    # if diff(oldTraj.oldCost) != 0       # if the two saved old trajectories are different (resp. have different costs)
-    #     y_psi  = cat(1,y_psi,diff(oldpsiDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
-    #     A_psi  = cat(1,A_psi,[oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
-    #     y_xDot = cat(1,y_xDot,diff(oldxDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
-    #     A_xDot = cat(1,A_xDot,[oldyDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]] olda[vec_range_ID[2]]])
-    #     y_yDot = cat(1,y_yDot,diff(oldyDot[idx_s[2]-n_prev:idx_s[2]+n_ahead+1]))
-    #     A_yDot = cat(1,A_yDot,[oldyDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]].*oldxDot[vec_range_ID[2]] oldpsiDot[vec_range_ID[2]]./oldxDot[vec_range_ID[2]] olddF[vec_range_ID[2]]])
-    # end
 
     if any(isnan,y_yDot)            # check if any value in the y_yDot value is NaN
         println(y_yDot)
         warn("NaN value detected in y_yDot! Press to continue...")
-        #readline()
     end
     if any(isnan,coeffCost)
         println(coeffCost)
         warn("NaN value detected in coeffCost! Press to continue...")
-        #readline()
     end
     if any(isnan,coeffConst)
         println(coeffCost)
         warn("NaN value detected in coeffConst! Press to continue...")
-        #readline()
     end
     # println("Calculating ID coefficients..")
     # println("xxxxxxxxxxxxxxxxxx")
@@ -259,28 +214,29 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     #println("Writing zeros..")
     mpcCoeff.c_Psi = zeros(3)
-    mpcCoeff.c_Vx = zeros(3)
+    mpcCoeff.c_Vx = zeros(4)
     mpcCoeff.c_Vy = zeros(4)
     #println("Finished writing zeros")
     if det(A_psi'*A_psi) != 0
-        #println("1")
         mpcCoeff.c_Psi = (A_psi'*A_psi)\A_psi'*y_psi
     else
         println("det y_psi = 0")
     end
     if det(A_xDot'*A_xDot) != 0
-        #println("2")
         mpcCoeff.c_Vx  = (A_xDot'*A_xDot)\A_xDot'*y_xDot         # the identity matrix is used to scale the coefficients
     else
         println("det vx = 0")
     end
     if det(A_yDot'*A_yDot) != 0
-        #println("3")
         mpcCoeff.c_Vy  = (A_yDot'*A_yDot)\A_yDot'*y_yDot
     else
         println("det vy = 0")
     end
-    println("Done.")
+    #println("Done. c_Psi = $(mpcCoeff.c_Psi)")
+    mpcCoeff.c_Psi = [-1.0,-4.5,5.8]
+    mpcCoeff.c_Vy  = [-1.2,-0.04,-0.01,0.6]
+    mpcCoeff.c_Psi = [-0.26682109207165566,-0.013445078992161885,1.2389672517023724]
+    mpcCoeff.c_Vy = [-0.006633028965076818,-0.02997779668710061,0.005781203137095575,0.10642934131787765]
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst
     nothing

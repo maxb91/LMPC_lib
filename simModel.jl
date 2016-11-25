@@ -66,7 +66,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     dsdt = (z[1]*cos(z[4]) - z[2]*sin(z[4]))/(1-z[5]*c)
 
     zNext = copy(z)
-    zNext[1] = z[1] + dt * (z[7] + z[2]*z[3] - c_f*z[1])       # xDot
+    zNext[1] = z[1] + dt * (z[7] + z[2]*z[3] - c_f*z[1])                    # xDot
     zNext[2] = z[2] + dt * (2/m*(FyF*cos(z[8]) + FyR) - z[3]*z[1])          # yDot
     zNext[3] = z[3] + dt * (2/I_z*(L_f*FyF - L_r*FyR))                      # psiDot
     zNext[4] = z[4] + dt * (z[3]-dsdt*c)                                    # ePsi
@@ -131,7 +131,8 @@ function simDynModel_xy(z::Array{Float64},u::Array{Float64},dt::Float64,modelPar
     zNext[5]        = zNext[5]       + dt * (z[6])                                          # psi
     zNext[6]        = zNext[6]       + dt * (2/I_z*(L_f*FyF - L_r*FyR))                     # psiDot
     zNext[7]        = zNext[7]       + dt * (u[1]-z[7])*100                                 # a
-    zNext[8]        = zNext[8]       + dt * (u[2]-z[8])*10                                  # d_f
+    zNext[8]        = zNext[8]       + dt * (u[2]-z[8])*100                                 # d_f
 
+    zNext[3] = max(0,zNext[3])              # limit speed to positive values (BARC specific)
     return zNext, [a_F a_R]
 end

@@ -34,7 +34,9 @@ type OldTrajectory      # information about previous trajectories
     count::Array{Int64}                 # contains the counter for each lap
     prebuf::Int64
     postbuf::Int64
-    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldTimes=Float64[],oldCost=Float64[],count=Int64[],prebuf=50,postbuf=50) = new(oldTraj,oldInput,oldTimes,oldCost,count,prebuf,postbuf)
+    idx_start::Array{Int64}             # index of the first measurement with s > 0
+    idx_end::Array{Int64}               # index of the last measurement with s < s_target
+    OldTrajectory(oldTraj=Float64[],oldInput=Float64[],oldTimes=Float64[],oldCost=Float64[],count=Int64[],prebuf=50,postbuf=50,idx_start=Int64[],idx_end=Int64[]) = new(oldTraj,oldInput,oldTimes,oldCost,count,prebuf,postbuf,idx_start,idx_end)
 end
 
 type MpcParams          # parameters for MPC solver
@@ -49,7 +51,7 @@ type MpcParams          # parameters for MPC solver
     QderivU::Array{Float64,1}
     Q_term_cost::Float64
     delay_df::Int64
-    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[],Q_term_cost=1.0,delay_df=2) = new(N,nz,OrderCostCons,Q,Q_term,R,vPathFollowing,QderivZ,QderivU,Q_term_cost,delay_df)
+    MpcParams(N=0,nz=0,OrderCostCons=0,Q=Float64[],Q_term=Float64[],R=Float64[],vPathFollowing=1.0,QderivZ=Float64[],QderivU=Float64[],Q_term_cost=1.0,delay_df=0) = new(N,nz,OrderCostCons,Q,Q_term,R,vPathFollowing,QderivZ,QderivU,Q_term_cost,delay_df)
 end
 
 type PosInfo            # current position information

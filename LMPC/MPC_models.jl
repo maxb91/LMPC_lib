@@ -13,9 +13,6 @@ type MpcModel
     u_Ol::Array{JuMP.Variable,2}
     ParInt::JuMP.Variable
 
-    dsdt::Array{JuMP.NonlinearExpression,1}
-    c::Array{JuMP.NonlinearExpression,1}
-
     laneCost::JuMP.NonlinearExpression
     constZTerm::JuMP.NonlinearExpression
     costZTerm::JuMP.NonlinearExpression
@@ -57,16 +54,16 @@ type MpcModel
         z_Ref       = cat(2,v_ref*ones(N+1,1),zeros(N+1,5))       # Reference trajectory: path following -> stay on line and keep constant velocity
         u_Ref       = zeros(N,2)
 
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.07))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
-        @variable( mdl, z_Ol[1:(N+1),1:6], start = 0)
-        @variable( mdl, u_Ol[1:N,1:2],     start = 0)
-        @variable( mdl, 0 <= ParInt <= 1,  start = 0)
+        @variable( mdl, z_Ol[1:(N+1),1:6])
+        @variable( mdl, u_Ol[1:N,1:2])
+        @variable( mdl, 0 <= ParInt <= 1)
 
-        z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                      # lower bounds on states
-        z_ub_6s = ones(mpcParams.N+1,1)*[2.0  Inf  Inf  Inf  Inf  Inf]                      # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [-1.0  -0.3]                                       # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [1.5    0.3]                                       # upper bounds
+        z_lb_6s = ones(mpcParams.N+1,1)*[0.2 -1.0 -1.0 -1.0 -1.0 -Inf]                      # lower bounds on states
+        z_ub_6s = ones(mpcParams.N+1,1)*[1.5  1.0  1.0  1.0  1.0  Inf]                      # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [0.1  -0.3]                                         # lower bounds on steering
+        u_ub_6s = ones(mpcParams.N,1) * [1.5   0.3]                                         # upper bounds
 
         for i=1:2
             for j=1:N
@@ -82,8 +79,8 @@ type MpcModel
         end
 
         @NLparameter(mdl, z0[i=1:6] == 0)
-        @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0);
-        @NLparameter(mdl, c_Vx[i=1:3]  == 0)
+        @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0)
+        @NLparameter(mdl, c_Vx[i=1:4]  == 0)
         @NLparameter(mdl, c_Vy[i=1:4]  == 0)
         @NLparameter(mdl, c_Psi[i=1:3] == 0)
         @NLparameter(mdl, coeffTermConst[i=1:order+1,j=1:2,k=1:5] == 0)
@@ -147,12 +144,12 @@ type MpcModel
         
         # State cost (only for path following mode)
         # ---------------------------------
-        @NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=2:N+1},i=1:6})    # Follow trajectory
-        #@NLexpression(mdl, costZ, 0.5*(Q[1]*((z_Ol[j,1]+z_Ol[j,2])^2 + Q[4]*z_Ol[j,4]^2
+        @NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=1:N+1},i=1:6})    # Follow trajectory
+        #@NLexpression(mdl, costZ, 0.5*sum{(Q[1]*(sqrt(z_Ol[j,1]^2+z_Ol[j,2]^2)-0.8)^2 + Q[4]*z_Ol[j,4]^2 + Q[5]*z_Ol[j,5]^2),j=2:N+1})
 
         # Solve model once
-        #@NLobjective(mdl, Min, derivCost + controlCost + laneCost + constZTerm + costZTerm)
-        @NLobjective(mdl, Min, derivCost + controlCost + costZ)
+        #@NLobjective(mdl, Min, derivCost + constZTerm + costZTerm + laneCost)
+        @NLobjective(mdl, Min, derivCost + costZ)
         sol_stat=solve(mdl)
         println("Finished solve 1: $sol_stat")
         sol_stat=solve(mdl)
@@ -162,8 +159,6 @@ type MpcModel
         m.coeff = coeff
         m.z_Ol = z_Ol
         m.u_Ol = u_Ol
-        m.dsdt = dsdt
-        m.c = c
         m.c_Vx = c_Vx
         m.c_Vy = c_Vy
         m.c_Psi = c_Psi
@@ -233,19 +228,24 @@ type MpcModel_pF
         @variable( mdl, z_Ol[1:(N+1),1:4], start = 0)          # z = s, ey, epsi, v
         @variable( mdl, u_Ol[1:N,1:2], start = 0)
 
-        # Set bounds (hard constraints)
+        # Set bounds
+        z_lb_4s = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                   # lower bounds on states
+        z_ub_4s = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  1.5]                   # upper bounds
+        u_lb_4s = ones(mpcParams.N,1) * [-0.2  -0.3]                           # lower bounds on steering
+        u_ub_4s = ones(mpcParams.N,1) * [2.0   0.3]                            # upper bounds
+
         for i=1:2
             for j=1:N
-                setlowerbound(u_Ol[j,i], modelParams.u_lb[j,i])
-                setupperbound(u_Ol[j,i], modelParams.u_ub[j,i])
+                setlowerbound(u_Ol[j,i], u_lb_4s[j,i])
+                setupperbound(u_Ol[j,i], u_ub_4s[j,i])
             end
         end
-        for i=1:4
-            for j=1:N+1
-                setlowerbound(z_Ol[j,i], modelParams.z_lb[j,i])
-                setupperbound(z_Ol[j,i], modelParams.z_ub[j,i])
-            end
-        end
+        # for i=1:4
+        #     for j=1:N+1
+        #         setlowerbound(z_Ol[j,i], z_lb_4s[j,i])
+        #         setupperbound(z_Ol[j,i], z_ub_4s[j,i])
+        #     end
+        # end
 
         @NLparameter(mdl, z0[i=1:4] == 0)
         @NLparameter(mdl, uPrev[1:10,1:2] == 0)
@@ -307,9 +307,6 @@ type MpcModel_pF
         m.coeff = coeff
         m.z_Ol = z_Ol
         m.u_Ol = u_Ol
-        #m.dsdt = dsdt
-        #m.bta = bta
-        #m.c = c
         m.uPrev = uPrev
         m.derivCost = derivCost
         m.costZ = costZ
