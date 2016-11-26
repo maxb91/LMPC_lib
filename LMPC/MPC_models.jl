@@ -54,11 +54,12 @@ type MpcModel
         z_Ref       = cat(2,v_ref*ones(N+1,1),zeros(N+1,5))       # Reference trajectory: path following -> stay on line and keep constant velocity
         u_Ref       = zeros(N,2)
 
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=1.0))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
         @variable( mdl, z_Ol[1:(N+1),1:6])
         @variable( mdl, u_Ol[1:N,1:2])
         @variable( mdl, 0 <= ParInt <= 1)
+        @variable( mdl, eps[1:2] >= 0)                   # eps for soft lane constraints
 
         z_lb_6s = ones(mpcParams.N+1,1)*[0.2 -1.0 -1.0 -1.0 -1.0 -Inf]                      # lower bounds on states
         z_ub_6s = ones(mpcParams.N+1,1)*[1.5  1.0  1.0  1.0  1.0  Inf]                      # upper bounds
@@ -92,6 +93,8 @@ type MpcModel
         setvalue(c_Vx[3],1)
 
         @NLconstraint(mdl, [i=1:6], z_Ol[1,i] == z0[i])
+        @NLconstraint(mdl, [i=1:N+1], z_Ol[i,5] <=  ey_max + eps[1])
+        @NLconstraint(mdl, [i=1:N+1], z_Ol[i,5] >= -ey_max - eps[2])
 
         @NLexpression(mdl, c[i = 1:N], sum{coeff[j]*z_Ol[i,6]^(n_poly_curv-j+1),j=1:n_poly_curv} + coeff[n_poly_curv+1])
         @NLexpression(mdl, dsdt[i = 1:N], (z_Ol[i,1]*cos(z_Ol[i,4]) - z_Ol[i,2]*sin(z_Ol[i,4]))/(1-z_Ol[i,5]*c[i]))
@@ -124,7 +127,7 @@ type MpcModel
 
         # Lane cost
         # ---------------------------------
-        @NLexpression(mdl, laneCost, 10*sum{z_Ol[i,5]^2*((0.5+0.5*tanh(10*(z_Ol[i,5]-ey_max))) + (0.5-0.5*tanh(10*(z_Ol[i,5]+ey_max)))),i=1:N+1})
+        @NLexpression(mdl, laneCost, sum{100*eps[i] + 100*eps[i]^2,i=1:2})
 
         # Control Input cost
         # ---------------------------------
@@ -148,8 +151,8 @@ type MpcModel
         #@NLexpression(mdl, costZ, 0.5*sum{(Q[1]*(sqrt(z_Ol[j,1]^2+z_Ol[j,2]^2)-0.8)^2 + Q[4]*z_Ol[j,4]^2 + Q[5]*z_Ol[j,5]^2),j=2:N+1})
 
         # Solve model once
-        #@NLobjective(mdl, Min, derivCost + constZTerm + costZTerm + laneCost)
-        @NLobjective(mdl, Min, derivCost + costZ)
+        @NLobjective(mdl, Min, derivCost + constZTerm + costZTerm + laneCost)
+        #@NLobjective(mdl, Min, derivCost + costZ + laneCost)
         sol_stat=solve(mdl)
         println("Finished solve 1: $sol_stat")
         sol_stat=solve(mdl)

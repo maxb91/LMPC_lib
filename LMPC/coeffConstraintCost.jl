@@ -34,8 +34,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
 
-    n_prev          = 30                            # number of points before current s for System ID
-    n_ahead         = 60                            # number of points ahead of current s for System ID
+    n_prev          = 20                            # number of points before current s for System ID
+    n_ahead         = 40                            # number of points ahead of current s for System ID
 
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
