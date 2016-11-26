@@ -24,7 +24,7 @@ function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     return zNext
 end
 
-function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::ModelParams,trackCoeff::TrackCoeff)
     # This function uses smaller steps to achieve higher fidelity than we would achieve using longer timesteps
     z_final = copy(z)
     u[1] = min(u[1],3)
@@ -33,17 +33,16 @@ function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff
     u[2] = max(u[2],-pi/6)
     dtn = dt/100
     for i=1:100
-        z_final = simDynModel(z_final,u,dtn,coeff,modelParams)
+        z_final = simDynModel(z_final,u,dtn,modelParams,trackCoeff)
     end
     return z_final
 end
 
-function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::ModelParams,trackCoeff::TrackCoeff)
 
     zNext::Array{Float64}
     L_f = modelParams.l_A
     L_r = modelParams.l_B
-    c0  = modelParams.c0
     m   = modelParams.m
     I_z = modelParams.I_z
     c_f = modelParams.c_f
@@ -60,9 +59,12 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     
     FyF = -pacejka(a_F)
     FyR = -pacejka(a_R)
+    coeff = trackCoeff.coeffCurvature
     
-    c = ([z[1]^8 z[2]^7 z[3]^6 z[4]^5 z[5]^4 z[6]^3 z[7]^2 z[8] 1]*coeff)[1]                        # Polynomial for curvature
-    
+    c = 0.0                                                               # Polynomial for curvature
+    for i=1:trackCoeff.nPolyCurvature+1
+        c += z[6]^(trackCoeff.nPolyCurvature+1-i)*coeff[i]
+    end
     dsdt = (z[1]*cos(z[4]) - z[2]*sin(z[4]))/(1-z[5]*c)
 
     zNext = copy(z)
@@ -73,7 +75,7 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     zNext[5] = z[5] + dt * (z[1]*sin(z[4]) + z[2]*cos(z[4]))                # eY
     zNext[6] = z[6] + dt * dsdt                                             # s
     zNext[7] = z[7] + dt * (u[1] - z[7]) * 100                              # a
-    zNext[8] = z[8] + dt * (u[2] - z[8]) * 10                               # d_f
+    zNext[8] = z[8] + dt * (u[2] - z[8]) * 100                              # d_f
 
     return zNext
 end

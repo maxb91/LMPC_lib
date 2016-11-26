@@ -63,9 +63,9 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
     mpcParams_pF.delay_df       = 0                         # steering delay (number of steps)
 
-    trackCoeff.nPolyCurvature   = 8                         # 4th order polynomial for curvature approximation
+    trackCoeff.nPolyCurvature   = 8                         # n-th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
-    trackCoeff.width            = 0.8                       # width of the track (0.5m)
+    trackCoeff.width            = 0.8                       # width of the track
 
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125

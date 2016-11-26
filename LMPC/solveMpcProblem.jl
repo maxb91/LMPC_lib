@@ -65,9 +65,6 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     println("derivCost      = $(mpcSol.cost[4])")
     println("controlCost    = $(mpcSol.cost[5])")
     println("laneCost       = $(mpcSol.cost[6])")
-    println("costZ: epsi    = $(norm(sol_z[:,4]))")
-    println("costZ: ey      = $(norm(sol_z[:,5]))")
-    println("costZ: v       = $(norm(sol_z[:,1]-0.8))")
     println("--------------- MPC END ------------------------------------------------")
     nothing
 end

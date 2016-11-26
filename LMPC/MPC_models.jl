@@ -232,8 +232,8 @@ type MpcModel_pF
         @variable( mdl, u_Ol[1:N,1:2], start = 0)
 
         # Set bounds
-        z_lb_4s = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                   # lower bounds on states
-        z_ub_4s = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  1.5]                   # upper bounds
+        z_lb_4s = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                  # lower bounds on states
+        z_ub_4s = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  1.5]                  # upper bounds
         u_lb_4s = ones(mpcParams.N,1) * [-0.2  -0.3]                           # lower bounds on steering
         u_ub_4s = ones(mpcParams.N,1) * [2.0   0.3]                            # upper bounds
 
