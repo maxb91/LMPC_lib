@@ -77,6 +77,8 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams
     zNext[7] = z[7] + dt * (u[1] - z[7]) * 100                              # a
     zNext[8] = z[8] + dt * (u[2] - z[8]) * 100                              # d_f
 
+    zNext[1] = max(0,zNext[1])              # limit speed to positive values (BARC specific)
+
     return zNext
 end
 

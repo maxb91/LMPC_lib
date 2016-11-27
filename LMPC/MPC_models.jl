@@ -61,10 +61,10 @@ type MpcModel
         @variable( mdl, 0 <= ParInt <= 1)
         @variable( mdl, eps[1:2] >= 0)                   # eps for soft lane constraints
 
-        z_lb_6s = ones(mpcParams.N+1,1)*[0.2 -1.0 -1.0 -1.0 -1.0 -Inf]                      # lower bounds on states
-        z_ub_6s = ones(mpcParams.N+1,1)*[1.5  1.0  1.0  1.0  1.0  Inf]                      # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [0.1  -0.3]                                         # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [1.5   0.3]                                         # upper bounds
+        z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -1.0 -Inf -Inf -Inf -Inf]                      # lower bounds on states
+        z_ub_6s = ones(mpcParams.N+1,1)*[5.0  2.0  Inf  Inf  Inf  Inf]                      # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [-3.0  -0.3]                                         # lower bounds on steering
+        u_ub_6s = ones(mpcParams.N,1) * [ 6.0   0.3]                                         # upper bounds
 
         for i=1:2
             for j=1:N
@@ -110,8 +110,8 @@ type MpcModel
                 @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + c_Vy[1]*z_Ol[i,2]/z_Ol[i,1] + c_Vy[2]*z_Ol[i,1]*z_Ol[i,3] + c_Vy[3]*z_Ol[i,3]/z_Ol[i,1] + c_Vy[4]*u_Ol[i-delay_df,2]) # yDot
                 @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + c_Psi[1]*z_Ol[i,3]/z_Ol[i,1] + c_Psi[2]*z_Ol[i,2]/z_Ol[i,1] + c_Psi[3]*u_Ol[i-delay_df,2])                            # psiDot
             end
-            #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*u_Ol[i,1])                                                   # xDot
-            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(u_Ol[i,1] - 0.5*z_Ol[i,1]))
+            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*u_Ol[i,1])                                                   # xDot
+            #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(u_Ol[i,1] - 0.5*z_Ol[i,1]))
             @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(z_Ol[i,3]-dsdt[i]*c[i]))                                                                                 # ePsi
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4])+z_Ol[i,2]*cos(z_Ol[i,4])))                                                      # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
@@ -147,7 +147,8 @@ type MpcModel
         
         # State cost (only for path following mode)
         # ---------------------------------
-        @NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=1:N+1},i=1:6})    # Follow trajectory
+        #@NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=1:N+1},i=1:6})    # Follow trajectory
+        @NLexpression(mdl, costZ, 0.0)
         #@NLexpression(mdl, costZ, 0.5*sum{(Q[1]*(sqrt(z_Ol[j,1]^2+z_Ol[j,2]^2)-0.8)^2 + Q[4]*z_Ol[j,4]^2 + Q[5]*z_Ol[j,5]^2),j=2:N+1})
 
         # Solve model once
