@@ -45,12 +45,12 @@ end
 
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
-    mpcParams.N                 = 8
+    mpcParams.N                 = 10
     mpcParams.Q                 = [10.0,0.0,0.0,1.0,10.0,0.0]   # Q (only for path following mode)
     mpcParams.vPathFollowing    = 0.8                           # reference speed for first lap of path following
-    mpcParams.Q_term            = 100.0*[10.0,0.1,0.001,0.001,0.001]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
+    mpcParams.Q_term            = 100.0*[0.01,0.01,0.001,0.001,0.001]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[10.0,10.0]                 # put weights on a and d_f
-    mpcParams.QderivZ           = 1.0*[1,1,1,1,1,0]             # cost matrix for derivative cost of states
+    mpcParams.QderivZ           = 0.01*[1,1,1,1,1,0]             # cost matrix for derivative cost of states
     mpcParams.QderivU           = 1.0*[1.0,1.0]                 # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.1                           # scaling of Q-function
     mpcParams.delay_df          = 0                             # steering delay

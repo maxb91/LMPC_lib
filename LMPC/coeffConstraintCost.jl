@@ -43,7 +43,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     n_laps_sysID    = 2                             # number of previous laps that are used for sysID
     #n_laps_sysID    = lapStatus.currentLap-2
     #selected_laps = [lapStatus.currentLap-1,lapStatus.currentLap-2]
-    selected_laps = collect(lapStatus.currentLap-1:-1:lapStatus.currentLap-n_laps_sysID)
+    #selected_laps = collect(lapStatus.currentLap-1:-1:lapStatus.currentLap-n_laps_sysID)
+    selected_laps = zeros(2)
+    selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
+    selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
+
     # Select the old data
     oldxDot         = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
     oldyDot         = oldTraj.oldTraj[:,2,selected_laps]::Array{Float64,3}
@@ -51,7 +55,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     oldePsi         = oldTraj.oldTraj[:,4,selected_laps]::Array{Float64,3}
     oldeY           = oldTraj.oldTraj[:,5,selected_laps]::Array{Float64,3}
     oldS            = oldTraj.oldTraj[:,6,selected_laps]::Array{Float64,3}
-    oldt            = oldTraj.oldTimes[:,selected_laps]::Array{Float64,2}
     olda            = oldTraj.oldInput[:,1,selected_laps]::Array{Float64,3}
     olddF           = oldTraj.oldInput[:,2,selected_laps]::Array{Float64,3}
 
@@ -88,12 +91,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         warn("Couldn't find a close point to current s.")
     end
 
-    # println("************************************** COEFFICIENTS **************************************")
-    # println("idx_s[1]  = $(idx_s[1]), idx_s[2] = $(idx_s[2])")
-    # println("s_total   = $s_total")
-    # println("bS_Vector[1,:] = $(bS_Vector[1,:]')")
-    # These matrices (above) contain two vectors each (for both old trajectories), stored in the 3rd dimension
-    
     # The states are parametrized with resprect to the curvilinear abscissa,
     # so we select the point used for the interpolation. Need to subtract an
     # offset to be coherent with the MPC formulation
@@ -101,7 +98,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     if s_total < 0
         s_forinterpy += s_target
     end
-    # println("s_forinterpy[:,:]' = $(s_forinterpy[:,:]')")
+
     # Create the Matrices for the interpolation
     MatrixInterp = zeros(pLength+1,Order+1,2)
 
@@ -119,14 +116,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         coeffConst[:,i,5]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
     end
 
-    # xDotInterp = [s_forinterpy[:,1].^5 s_forinterpy[:,1].^4 s_forinterpy[:,1].^3 s_forinterpy[:,1].^2 s_forinterpy[:,1].^1 s_forinterpy[:,1].^0]*coeffConst[:,1,1]
-    # plot(s_forinterpy,oldxDot[vec_range[1]],"*",s_forinterpy,xDotInterp)
-    # title("xDotInterp")
-    # grid("on")
-    # readline()
-
-    # Finished with calculating the constraint coefficients
-    
     # Now compute the final cost coefficients
 
     # The Q-function contains for every point in the sampled safe set the minimum cost-to-go-value
@@ -139,9 +128,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
                                                                                                     # decreases in equal steps
             coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end
-    # println("coeffCost: $coeffCost")
-    # println("coeffConst: $coeffConst")
-    # println("Finished coefficients, starting system ID")
+
     # --------------- SYSTEM IDENTIFICATION --------------- #
     # ----------------------------------------------------- #
 
