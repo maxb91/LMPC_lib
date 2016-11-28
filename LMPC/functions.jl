@@ -50,10 +50,10 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams.vPathFollowing    = 0.8                           # reference speed for first lap of path following
     mpcParams.Q_term            = 100.0*[0.01,0.01,0.001,0.001,0.001]     # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[10.0,10.0]                 # put weights on a and d_f
-    mpcParams.QderivZ           = 0.01*[1,1,1,1,1,0]             # cost matrix for derivative cost of states
+    mpcParams.QderivZ           = 0.01*[1,1,1,1,1,0]            # cost matrix for derivative cost of states
     mpcParams.QderivU           = 1.0*[1.0,1.0]                 # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 0.1                           # scaling of Q-function
-    mpcParams.delay_df          = 0                             # steering delay
+    mpcParams.delay_df          = 2                             # steering delay
 
     mpcParams_pF.N              = 10
     mpcParams_pF.Q              = [0.0,10.0,0.1,1.0]
@@ -61,7 +61,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
     mpcParams_pF.QderivU        = 1.0*[1,10]                # cost matrix for derivative cost of inputs
     mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
-    mpcParams_pF.delay_df       = 0                         # steering delay (number of steps)
+    mpcParams_pF.delay_df       = 2                         # steering delay (number of steps)
 
     trackCoeff.nPolyCurvature   = 8                         # n-th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)

@@ -33,6 +33,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     R               = mpcParams.R
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
+    delay_df        = mpcParams.delay_df
+    #delay_df        = 1
 
     n_prev          = 20                            # number of points before current s for System ID
     n_ahead         = 60                            # number of points ahead of current s for System ID
@@ -158,16 +160,16 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     for i=1:n_laps_sysID
         y_psi[(1:sz_last)+(i-1)*sz_last]    = diff(oldpsiDot[idx_s[i]-n_prev:idx_s[i]+n_ahead+1])
-        A_psi[(1:sz_last)+(i-1)*sz_last,:]  = [oldpsiDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] oldyDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] olddF[vec_range_ID[i]]]
+        A_psi[(1:sz_last)+(i-1)*sz_last,:]  = [oldpsiDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] oldyDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] olddF[vec_range_ID[i]-delay_df]]
         y_xDot[(1:sz_last)+(i-1)*sz_last]   = diff(oldxDot[idx_s[i]-n_prev:idx_s[i]+n_ahead+1])
         A_xDot[(1:sz_last)+(i-1)*sz_last,:] = [oldyDot[vec_range_ID[i]] oldpsiDot[vec_range_ID[i]] oldxDot[vec_range_ID[i]] olda[vec_range_ID[i]]]
         y_yDot[(1:sz_last)+(i-1)*sz_last]   = diff(oldyDot[idx_s[i]-n_prev:idx_s[i]+n_ahead+1])
-        A_yDot[(1:sz_last)+(i-1)*sz_last,:] = [oldyDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] oldpsiDot[vec_range_ID[i]].*oldxDot[vec_range_ID[i]] oldpsiDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] olddF[vec_range_ID[i]]]
+        A_yDot[(1:sz_last)+(i-1)*sz_last,:] = [oldyDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] oldpsiDot[vec_range_ID[i]].*oldxDot[vec_range_ID[i]] oldpsiDot[vec_range_ID[i]]./oldxDot[vec_range_ID[i]] olddF[vec_range_ID[i]-delay_df]]
     end
 
     # psiDot
     y_psi[(1:sz_curr)+n_laps_sysID*sz_last]   = diff(oldTraj.oldTraj[cC-n_prev:cC,3,cL])
-    A_psi[(1:sz_curr)+n_laps_sysID*sz_last,:] = [oldTraj.oldTraj[vec_range_ID2,3,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,2,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldInput[vec_range_ID2,2,cL]]
+    A_psi[(1:sz_curr)+n_laps_sysID*sz_last,:] = [oldTraj.oldTraj[vec_range_ID2,3,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,2,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldInput[vec_range_ID2-delay_df,2,cL]]
     
     # xDot
     y_xDot[(1:sz_curr)+n_laps_sysID*sz_last] = diff(oldTraj.oldTraj[cC-n_prev:cC,1,cL])
@@ -175,7 +177,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     
     # yDot
     y_yDot[(1:sz_curr)+n_laps_sysID*sz_last] = diff(oldTraj.oldTraj[cC-n_prev:cC,2,cL])
-    A_yDot[(1:sz_curr)+n_laps_sysID*sz_last,:] = [oldTraj.oldTraj[vec_range_ID2,2,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,3,cL].*oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,3,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldInput[vec_range_ID2,2]]
+    A_yDot[(1:sz_curr)+n_laps_sysID*sz_last,:] = [oldTraj.oldTraj[vec_range_ID2,2,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,3,cL].*oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldTraj[vec_range_ID2,3,cL]./oldTraj.oldTraj[vec_range_ID2,1,cL] oldTraj.oldInput[vec_range_ID2-delay_df,2]]
 
     if any(isnan,y_yDot)            # check if any value in the y_yDot value is NaN
         println(y_yDot)
