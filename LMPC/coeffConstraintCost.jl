@@ -43,27 +43,27 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     #selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
 
     # Select the old data
-    oldxDot         = oldTraj.oldTraj[:,1,selected_laps]::Array{Float32,3}
-    oldyDot         = oldTraj.oldTraj[:,2,selected_laps]::Array{Float32,3}
-    oldpsiDot       = oldTraj.oldTraj[:,3,selected_laps]::Array{Float32,3}
-    oldePsi         = oldTraj.oldTraj[:,4,selected_laps]::Array{Float32,3}
-    oldeY           = oldTraj.oldTraj[:,5,selected_laps]::Array{Float32,3}
-    oldS            = oldTraj.oldTraj[:,6,selected_laps]::Array{Float32,3}
-    olda            = oldTraj.oldInput[:,1,selected_laps]::Array{Float32,3}
-    olddF           = oldTraj.oldInput[:,2,selected_laps]::Array{Float32,3}
+    oldxDot         = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
+    oldyDot         = oldTraj.oldTraj[:,2,selected_laps]::Array{Float64,3}
+    oldpsiDot       = oldTraj.oldTraj[:,3,selected_laps]::Array{Float64,3}
+    oldePsi         = oldTraj.oldTraj[:,4,selected_laps]::Array{Float64,3}
+    oldeY           = oldTraj.oldTraj[:,5,selected_laps]::Array{Float64,3}
+    oldS            = oldTraj.oldTraj[:,6,selected_laps]::Array{Float64,3}
+    olda            = oldTraj.oldInput[:,1,selected_laps]::Array{Float64,3}
+    olddF           = oldTraj.oldInput[:,2,selected_laps]::Array{Float64,3}
     #olddF           = smooth(olddF,5)
 
     N_points        = size(oldTraj.oldTraj,1)     # second dimension = length (=buffersize)
 
-    s_total::Float32        # initialize
-    DistS::Array{Float32}   # initialize
+    s_total::Float64        # initialize
+    DistS::Array{Float64}   # initialize
     idx_s::Array{Int32}     # initialize
     idx_s_target        = 0
     dist_to_s_target    = 0
     qLength             = 0
     vec_range::Tuple{UnitRange{Int32},UnitRange{Int32}}
-    bS_Vector::Array{Float32}
-    s_forinterpy::Array{Float32}
+    bS_Vector::Array{Float64}
+    s_forinterpy::Array{Float64}
 
     # Compute the total s (current position along track)
     s_total = s % s_target

@@ -15,12 +15,12 @@
 # i = 5 -> eY
 # i = 6 -> s
 
-function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float32},uPrev::Array{Float32})
+function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
 
     # Load Parameters
     sol_status::Symbol
-    sol_u::Array{Float32,2}
-    sol_z::Array{Float32,2}
+    sol_u::Array{Float64,2}
+    sol_z::Array{Float64,2}
 
     # Update current initial condition, curvature and System ID coefficients
     setvalue(mdl.z0,zCurr)
@@ -72,14 +72,14 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     nothing
 end
 
-function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::MpcParams,trackCoeff::TrackCoeff,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float32},uPrev::Array{Float32})
+function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::MpcParams,trackCoeff::TrackCoeff,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
 
     # Load Parameters
-    coeffCurvature  = trackCoeff.coeffCurvature::Array{Float32,1}
+    coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
 
     sol_status::Symbol
-    sol_u::Array{Float32,2}
-    sol_z::Array{Float32,2}
+    sol_u::Array{Float64,2}
+    sol_z::Array{Float64,2}
 
     # Update current initial condition, curvature and previous input
     setvalue(mdl.z0,zCurr)

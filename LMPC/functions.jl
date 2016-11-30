@@ -8,7 +8,7 @@
 # The number of recorded states during one trajectory (0 <= s < s_target) is equal to <oldCost>.
 # After the recorded trajectory, the rest of the vector (until <buffersize>) is filled up with constant values
 
-function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float32},uCurr::Array{Float32},lapStatus::LapStatus,posInfo::PosInfo,buffersize::Int32)
+function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{Float64},lapStatus::LapStatus,posInfo::PosInfo,buffersize::Int32)
                 println("Starting function")
                 i               = lapStatus.currentIt-1         # i = number of points for 0 <= s < s_target (= cost of this lap)
                 prebuf          = oldTraj.prebuf                # so many points of the end of the previous old traj will be attached to the beginning

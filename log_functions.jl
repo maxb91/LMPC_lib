@@ -2,8 +2,8 @@
 # This type contains measurement data (time, values and a counter)
 type Measurements{T}
     i::Int32                # measurement counter
-    t::Array{Float32}       # time data (when it was received by this recorder)
-    t_msg::Array{Float32}   # time that the message was sent
+    t::Array{Float64}       # time data (when it was received by this recorder)
+    t_msg::Array{Float64}   # time that the message was sent
     z::Array{T}             # measurement values
 end
 
@@ -14,8 +14,8 @@ function clean_up(m::Measurements)
     m.z     = m.z[1:m.i-1,:]
 end
 
-function Quat2Euler(q::Array{Float32})
-    sol = zeros(Float32,3)
+function Quat2Euler(q::Array{Float64})
+    sol = zeros(Float64,3)
     sol[1]   = atan2(2*(q[1]*q[2]+q[3]*q[4]),1-2*(q[2]^2+q[3]^2))
     sol[2]   = asin(2*(q[1]*q[3]-q[4]*q[2]))
     sol[3]   = atan2(2*(q[1]*q[4]+q[2]*q[3]),1-2*(q[3]^2+q[4]^2))
@@ -25,7 +25,7 @@ end
 function ECU_callback(msg::ECU,cmd_log::Measurements)
     cmd_log.t[cmd_log.i] = to_sec(get_rostime())
     cmd_log.t_msg[cmd_log.i] = to_sec(msg.header.stamp)
-    cmd_log.z[cmd_log.i,:] = convert(Array{Float32,1},[msg.motor;msg.servo])
+    cmd_log.z[cmd_log.i,:] = convert(Array{Float64,1},[msg.motor;msg.servo])
     cmd_log.i += 1
     nothing
 end
@@ -33,7 +33,7 @@ end
 function ECU_PWM_callback(msg::ECU,cmd_pwm_log::Measurements)
     cmd_pwm_log.t[cmd_pwm_log.i] = to_sec(get_rostime())
     cmd_pwm_log.t_msg[cmd_pwm_log.i] = to_sec(msg.header.stamp)
-    cmd_pwm_log.z[cmd_pwm_log.i,:] = convert(Array{Float32,1},[msg.motor;msg.servo])
+    cmd_pwm_log.z[cmd_pwm_log.i,:] = convert(Array{Float64,1},[msg.motor;msg.servo])
     cmd_pwm_log.i += 1
     nothing
 end
@@ -43,7 +43,7 @@ function IMU_callback(msg::Imu,imu_meas::Measurements)
     imu_meas.t_msg[imu_meas.i]  = to_sec(msg.header.stamp)
     imu_meas.z[imu_meas.i,:]    = [msg.angular_velocity.x;msg.angular_velocity.y;msg.angular_velocity.z;
                                     Quat2Euler([msg.orientation.w;msg.orientation.x;msg.orientation.y;msg.orientation.z]);
-                                    msg.linear_acceleration.x;msg.linear_acceleration.y;msg.linear_acceleration.z]::Array{Float32}
+                                    msg.linear_acceleration.x;msg.linear_acceleration.y;msg.linear_acceleration.z]::Array{Float64}
     imu_meas.i += 1
     nothing
 end
