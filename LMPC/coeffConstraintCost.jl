@@ -35,7 +35,13 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
 
-    selected_laps = [lapStatus.currentLap-1,lapStatus.currentLap-2]
+    n_laps_sysID    = 2                             # number of previous laps that are used for sysID
+
+    selected_laps = zeros(2)
+    selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
+    selected_laps[2] = lapStatus.currentLap-2                                   # and the one before
+    #selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
+
     # Select the old data
     oldxDot         = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
     oldyDot         = oldTraj.oldTraj[:,2,selected_laps]::Array{Float64,3}
@@ -126,10 +132,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # --------------- SYSTEM IDENTIFICATION --------------- #
     # ----------------------------------------------------- #
 
-    #n_ID            = n_prev+n_ahead+1                  # number of system ID points (using only 1 round)
-    #vec_range_ID    = (idx_s[1]-n_prev:idx_s[1]+n_ahead,idx_s[2]-n_prev:idx_s[2]+n_ahead)  # related index range
-    #vec_range_ID2   = size(currentTraj,1)-n_prev:size(currentTraj,1)-1      # index range of previous states and inputs
-    cC = oldTraj.count[lapStatus.currentLap]      # current count
+    cC = oldTraj.count[lapStatus.currentLap]-1      # current count
     cL = lapStatus.currentLap                       # current lap
     #vec_range_ID2   = cC-n_prev:cC-1                # index range for current lap
     
@@ -141,6 +144,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     n_sys_ID_prev = 20              # steps of sysID before current point in previous laps
     n_sys_ID_post = 60              # steps of sysID after current point in previous laps
     n_sys_ID_prev_c = 30            # steps of sysID before current point in current lap
+
+    # vec_range_ID    = ()
+    # for i=1:n_laps_sysID
+    #     vec_range_ID    = tuple(vec_range_ID...,idx_s[i]-n_prev:idx_s[i]+n_ahead)     # related index range
+    # end
 
     sysID_idx_diff = idx_s[1]-n_sys_ID_prev*5-1 + (1:5:(n_sys_ID_prev+n_sys_ID_post+1)*5)         # these are the indices that are used for differences
     sysID_idx = sysID_idx_diff[1:end-1]

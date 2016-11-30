@@ -96,8 +96,8 @@ function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::M
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
-    #mpcSol.cost = zeros(6)
-    mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),getvalue(mdl.controlCost),0]
+    mpcSol.cost = zeros(6)
+    #mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),getvalue(mdl.controlCost),0]
 
     # Print information
     println("--------------- MPC PF START -----------------------------------------------")
