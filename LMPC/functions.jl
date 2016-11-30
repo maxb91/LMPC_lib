@@ -8,7 +8,7 @@
 # The number of recorded states during one trajectory (0 <= s < s_target) is equal to <oldCost>.
 # After the recorded trajectory, the rest of the vector (until <buffersize>) is filled up with constant values
 
-function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{Float64},lapStatus::LapStatus,posInfo::PosInfo,buffersize::Int64)
+function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float32},uCurr::Array{Float32},lapStatus::LapStatus,posInfo::PosInfo,buffersize::Int32)
                 println("Starting function")
                 i               = lapStatus.currentIt-1         # i = number of points for 0 <= s < s_target (= cost of this lap)
                 prebuf          = oldTraj.prebuf                # so many points of the end of the previous old traj will be attached to the beginning
@@ -44,7 +44,7 @@ function saveOldTraj(oldTraj::OldTrajectory,zCurr::Array{Float64},uCurr::Array{F
 end
 
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
-                                posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
+                                posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int32)
     mpcParams.N                 = 10
     mpcParams.Q                 = [10.0,0.0,0.0,1.0,10.0,0.0]   # Q (only for path following mode)
     mpcParams.vPathFollowing    = 1.0                           # reference speed for first lap of path following
@@ -82,7 +82,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     oldTraj.oldInput            = zeros(buffersize,2,15)
     oldTraj.oldTimes            = NaN*ones(buffersize,15)
     oldTraj.count               = ones(15)*2
-    oldTraj.oldCost             = ones(Int64,20)                   # dummies for initialization
+    oldTraj.oldCost             = ones(Int32,20)                   # dummies for initialization
     oldTraj.prebuf              = 30
     oldTraj.postbuf             = 30
     oldTraj.idx_start           = zeros(15)

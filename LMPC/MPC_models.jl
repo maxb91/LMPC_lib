@@ -40,9 +40,9 @@ type MpcModel
         order           = mpcCoeff.order       # polynomial order of terminal constraints and cost approximation
         ey_max          = trackCoeff.width/2
 
-        QderivZ         = mpcParams.QderivZ::Array{Float64,1}
-        QderivU         = mpcParams.QderivU::Array{Float64,1}
-        Q_term_cost     = mpcParams.Q_term_cost::Float64
+        QderivZ         = mpcParams.QderivZ::Array{Float32,1}
+        QderivU         = mpcParams.QderivU::Array{Float32,1}
+        Q_term_cost     = mpcParams.Q_term_cost::Float32
         delay_df        = mpcParams.delay_df
         delay_a         = mpcParams.delay_a
 
@@ -51,7 +51,7 @@ type MpcModel
         # Path following mode:
         # Create function-specific parameters
         v_ref       = mpcParams.vPathFollowing
-        z_Ref::Array{Float64,2}
+        z_Ref::Array{Float32,2}
         z_Ref       = cat(2,v_ref*ones(N+1,1),zeros(N+1,5))       # Reference trajectory: path following -> stay on line and keep constant velocity
         u_Ref       = zeros(N,2)
 
@@ -213,17 +213,17 @@ type MpcModel_pF
         N           = mpcParams.N
         Q           = mpcParams.Q
         R           = mpcParams.R
-        QderivZ     = mpcParams.QderivZ::Array{Float64,1}
-        QderivU     = mpcParams.QderivU::Array{Float64,1}
-        delay_df    = mpcParams.delay_df::Int64
-        delay_a     = mpcParams.delay_a::Int64
+        QderivZ     = mpcParams.QderivZ::Array{Float32,1}
+        QderivU     = mpcParams.QderivU::Array{Float32,1}
+        delay_df    = mpcParams.delay_df::Int32
+        delay_a     = mpcParams.delay_a::Int32
 
         v_ref       = mpcParams.vPathFollowing
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
 
         # Create function-specific parameters
-        z_Ref::Array{Float64,2}
+        z_Ref::Array{Float32,2}
         z_Ref       = cat(2,zeros(N+1,3),v_ref*ones(N+1,1))       # Reference trajectory: path following -> stay on line and keep constant velocity
         u_Ref       = zeros(N,2)
 

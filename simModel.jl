@@ -5,9 +5,9 @@
 # z[5] = eY
 # z[6] = s
 
-function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+function simKinModel(z::Array{Float32},u::Array{Float32},dt::Float32,coeff::Array{Float32},modelParams::ModelParams)
 
-    zNext::Array{Float64}
+    zNext::Array{Float32}
     L_a = modelParams.l_A
     L_b = modelParams.l_B
     c = ([z[1]^8 z[1]^7 z[1]^6 z[1]^5 z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]        # Polynomial
@@ -24,7 +24,7 @@ function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     return zNext
 end
 
-function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+function simDynModel_exact(z::Array{Float32},u::Array{Float32},dt::Float32,coeff::Array{Float32},modelParams::ModelParams)
     # This function uses smaller steps to achieve higher fidelity than we would achieve using longer timesteps
     z_final = copy(z)
     u[1] = min(u[1],3)
@@ -38,9 +38,9 @@ function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,coeff
     return z_final
 end
 
-function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Array{Float64},modelParams::ModelParams)
+function simDynModel(z::Array{Float32},u::Array{Float32},dt::Float32,coeff::Array{Float32},modelParams::ModelParams)
 
-    zNext::Array{Float64}
+    zNext::Array{Float32}
     L_f = modelParams.l_A
     L_r = modelParams.l_B
     c0  = modelParams.c0
@@ -89,7 +89,7 @@ function pacejka(a)
     return C_alpha_f
 end
 
-function simDynModel_exact_xy(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::ModelParams)
+function simDynModel_exact_xy(z::Array{Float32},u::Array{Float32},dt::Float32,modelParams::ModelParams)
     dtn = dt/10
     t = 0:dtn:dt
     z_final = copy(z)
@@ -100,9 +100,9 @@ function simDynModel_exact_xy(z::Array{Float64},u::Array{Float64},dt::Float64,mo
     return z_final, ang
 end
 
-function simDynModel_xy(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::ModelParams)
+function simDynModel_xy(z::Array{Float32},u::Array{Float32},dt::Float32,modelParams::ModelParams)
 
-    zNext::Array{Float64}
+    zNext::Array{Float32}
     L_f = modelParams.l_A
     L_r = modelParams.l_B
     m   = modelParams.m
