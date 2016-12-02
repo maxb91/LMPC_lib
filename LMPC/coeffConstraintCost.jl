@@ -120,7 +120,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
     # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
     for i=1:2   
-            dist_to_s_target  = oldTraj.oldCost[i] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target
+            dist_to_s_target  = oldTraj.oldCost[selected_laps[i]] + oldTraj.idx_start[selected_laps[i]] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target
             bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and
                                                                                                     # decreases in equal steps
             coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
@@ -141,7 +141,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # ADD 2-step-delay to sysID
     # ************************
     # collect indices for system ID
-    n_sys_ID_prev = 20              # steps of sysID before current point in previous laps
+    n_sys_ID_prev = 60              # steps of sysID before current point in previous laps
     n_sys_ID_post = 60              # steps of sysID after current point in previous laps
     n_sys_ID_prev_c = 30            # steps of sysID before current point in current lap
 
@@ -177,14 +177,14 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     # xDot
     y_xDot = zeros((2*sz1+sz2)*5)
-    A_xDot = zeros((2*sz1+sz2)*5,4)
+    A_xDot = zeros((2*sz1+sz2)*5,5)
     for i=0:4
         y_xDot[(1:sz1)+i*sz1]            = diff(oldxDot[sysID_idx_diff+i])
-        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] oldxDot[sysID_idx+i] olda[sysID_idx+i]]
+        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] oldxDot[sysID_idx+i] olda[sysID_idx+i] olda[sysID_idx+i].*oldpsiDot[sysID_idx+i].^2]
         y_xDot[(1:sz2)+i*sz2+5*sz1]      = diff(oldTraj.oldTraj[sysID_idx_diff_c+i,1,cL])
-        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldTraj[sysID_idx_c+i,1,cL] oldTraj.oldInput[sysID_idx_c+i,1,cL]]
+        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldTraj[sysID_idx_c+i,1,cL]  oldTraj.oldInput[sysID_idx_c+i,1,cL] oldTraj.oldInput[sysID_idx_c+i,1,cL].*oldTraj.oldTraj[sysID_idx_c+i,3,cL].^2]
         y_xDot[(1:sz1)+i*sz1+5*(sz1+sz2)]   = diff(oldxDot[sysID_idx_diff2+i])
-        A_xDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i] oldxDot[sysID_idx2+i] olda[sysID_idx2+i]]
+        A_xDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i] oldxDot[sysID_idx2+i] olda[sysID_idx2+i] olda[sysID_idx2+i].*oldpsiDot[sysID_idx2+i].^2]
     end
 
     # yDot
@@ -241,10 +241,10 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         println("det vy = 0")
     end
     #println("Done. c_Psi = $(mpcCoeff.c_Psi)")
-    mpcCoeff.c_Psi = [-1.0,-4.5,5.8]
-    mpcCoeff.c_Vy  = [-1.2,-0.04,-0.01,0.6]
-    mpcCoeff.c_Psi = [-0.26682109207165566,-0.013445078992161885,1.2389672517023724]
-    mpcCoeff.c_Vy = [-0.006633028965076818,-0.02997779668710061,0.005781203137095575,0.10642934131787765]
+    #mpcCoeff.c_Psi = [-1.0,-4.5,5.8]
+    #mpcCoeff.c_Vy  = [-1.2,-0.04,-0.01,0.6]
+    #mpcCoeff.c_Psi = [-0.26682109207165566,-0.013445078992161885,1.2389672517023724]
+    #mpcCoeff.c_Vy = [-0.006633028965076818,-0.02997779668710061,0.005781203137095575,0.10642934131787765]
     mpcCoeff.coeffCost  = coeffCost
     mpcCoeff.coeffConst = coeffConst
     nothing
