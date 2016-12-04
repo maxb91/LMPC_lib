@@ -78,7 +78,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
 
     posInfo.s_target            = 5.0
 
-    oldTraj.oldTraj             = NaN*ones(buffersize,6,30)
+    oldTraj.oldTraj             = NaN*ones(buffersize,7,30)
     oldTraj.oldInput            = zeros(buffersize,2,30)
     oldTraj.oldTimes            = NaN*ones(buffersize,30)
     oldTraj.count               = ones(30)*2

@@ -41,7 +41,9 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     selected_laps = zeros(2)
     selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
     selected_laps[2] = lapStatus.currentLap-2                                   # and the one before
-    selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
+    if lapStatus.currentLap >= 5
+        selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
+    end
 
     # Select the old data
     oldxDot         = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
@@ -50,6 +52,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     oldePsi         = oldTraj.oldTraj[:,4,selected_laps]::Array{Float64,3}
     oldeY           = oldTraj.oldTraj[:,5,selected_laps]::Array{Float64,3}
     oldS            = oldTraj.oldTraj[:,6,selected_laps]::Array{Float64,3}
+    oldacc          = oldTraj.oldTraj[:,7,selected_laps]::Array{Float64,3}
     olda            = oldTraj.oldInput[:,1,selected_laps]::Array{Float64,3}
     olddF           = oldTraj.oldInput[:,2,selected_laps]::Array{Float64,3}
     #olddF           = smooth(olddF,5)
@@ -178,11 +181,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     A_xDot = zeros((2*sz1+sz2)*5,4)
     for i=0:4
         y_xDot[(1:sz1)+i*sz1]            = diff(oldxDot[sysID_idx_diff+i])
-        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] oldxDot[sysID_idx+i] olda[sysID_idx+i]]
+        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] oldxDot[sysID_idx+i] oldacc[sysID_idx+i]]
         y_xDot[(1:sz2)+i*sz2+5*sz1]      = diff(oldTraj.oldTraj[sysID_idx_diff_c+i,1,cL])
-        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldTraj[sysID_idx_c+i,1,cL]  oldTraj.oldInput[sysID_idx_c+i,1,cL]]
+        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldTraj[sysID_idx_c+i,1,cL]  oldTraj.oldTraj[sysID_idx_c+i,7,cL]]
         y_xDot[(1:sz1)+i*sz1+5*(sz1+sz2)]   = diff(oldxDot[sysID_idx_diff2+i])
-        A_xDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i] oldxDot[sysID_idx2+i] olda[sysID_idx2+i]]
+        A_xDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i] oldxDot[sysID_idx2+i] oldacc[sysID_idx2+i]]
     end
 
     # yDot
