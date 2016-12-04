@@ -55,7 +55,7 @@ type MpcModel
         z_Ref       = cat(2,v_ref*ones(N+1,1),zeros(N+1,5))       # Reference trajectory: path following -> stay on line and keep constant velocity
         u_Ref       = zeros(N,2)
 
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.05))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.07))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
         @variable( mdl, z_Ol[1:(N+1),1:6])
         @variable( mdl, u_Ol[1:N,1:2])
@@ -64,8 +64,8 @@ type MpcModel
 
         z_lb_6s = ones(mpcParams.N+1,1)*[0.1 -Inf -Inf -Inf -Inf -Inf]                      # lower bounds on states
         z_ub_6s = ones(mpcParams.N+1,1)*[2.5  Inf Inf  Inf  Inf  Inf]                      # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [-0.1  -0.3]                                         # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [1.5   0.3]                                         # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [-0.3  -0.3]                                         # lower bounds on steering
+        u_ub_6s = ones(mpcParams.N,1) * [1.2   0.3]                                         # upper bounds
 
         for i=1:2
             for j=1:N
@@ -82,7 +82,7 @@ type MpcModel
 
         @NLparameter(mdl, z0[i=1:6] == 0)
         @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0)
-        @NLparameter(mdl, c_Vx[i=1:5]  == 0)
+        @NLparameter(mdl, c_Vx[i=1:4]  == 0)
         @NLparameter(mdl, c_Vy[i=1:4]  == 0)
         @NLparameter(mdl, c_Psi[i=1:3] == 0)
         @NLparameter(mdl, coeffTermConst[i=1:order+1,j=1:2,k=1:5] == 0)
@@ -113,16 +113,20 @@ type MpcModel
             end
             if i<=delay_a
                 #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(uPrev[delay_a+1-i,1] - 0.5*z_Ol[i,1]))
-                @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*uPrev[delay_a+1-i,1] + c_Vx[5]*uPrev[delay_a+1-i,1]*z_Ol[i,3]^2)                                                   # xDot
+                @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*uPrev[delay_a+1-i,1])                                                   # xDot
             else
                 #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(u_Ol[i-delay_a,1] - 0.5*z_Ol[i,1]))
-                @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*u_Ol[i-delay_a,1] + c_Vx[5]*u_Ol[i-delay_a,1]*z_Ol[i,3]^2)                                                   # xDot
+                @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*u_Ol[i-delay_a,1])                                                   # xDot
             end
             #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*u_Ol[i,1])                                                   # xDot
             @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(z_Ol[i,3]-dsdt[i]*c[i]))                                                                                 # ePsi
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4])+z_Ol[i,2]*cos(z_Ol[i,4])))                                                      # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
         end
+        # for i=1:N-1 # Constraints on u:
+        #     @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.1)
+        #     @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.1)
+        # end
 
         # Cost functions
 
@@ -134,7 +138,7 @@ type MpcModel
 
         # Lane cost
         # ---------------------------------
-        @NLexpression(mdl, laneCost, sum{1000*eps[i] + 1000*eps[i]^2,i=1:2})
+        @NLexpression(mdl, laneCost, sum{100*eps[i] + 100*eps[i]^2,i=1:2})
 
         # Control Input cost
         # ---------------------------------
@@ -242,7 +246,7 @@ type MpcModel_pF
         # Set bounds
         z_lb_4s = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                  # lower bounds on states
         z_ub_4s = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  1.5]                  # upper bounds
-        u_lb_4s = ones(mpcParams.N,1) * [0.3  -0.3]                            # lower bounds on steering
+        u_lb_4s = ones(mpcParams.N,1) * [0.0  -0.3]                            # lower bounds on steering
         u_ub_4s = ones(mpcParams.N,1) * [1.2   0.3]                            # upper bounds
 
         for i=1:2

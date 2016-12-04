@@ -31,6 +31,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
     delay_df        = mpcParams.delay_df
+    #delay           = 2
 
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
@@ -40,7 +41,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     selected_laps = zeros(2)
     selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
     selected_laps[2] = lapStatus.currentLap-2                                   # and the one before
-    #selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
+    selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
 
     # Select the old data
     oldxDot         = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
@@ -93,7 +94,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     if s_total < 0
         s_forinterpy += s_target
     end
-    # println("s_forinterpy[:,:]' = $(s_forinterpy[:,:]')")
+
     # Create the Matrices for the interpolation
     MatrixInterp = zeros(pLength+1,Order+1,2)
 
@@ -125,9 +126,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
                                                                                                     # decreases in equal steps
             coeffCost[:,i]    = MatrixInterp[:,:,i]\bQfunction_Vector           # interpolate this vector with the given s
     end
-    #println("coeffCost: $coeffCost")
-    #println("coeffConst: $coeffConst")
-    #println("Finished coefficients, starting system ID")
 
     # --------------- SYSTEM IDENTIFICATION --------------- #
     # ----------------------------------------------------- #
@@ -177,14 +175,14 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     # xDot
     y_xDot = zeros((2*sz1+sz2)*5)
-    A_xDot = zeros((2*sz1+sz2)*5,5)
+    A_xDot = zeros((2*sz1+sz2)*5,4)
     for i=0:4
         y_xDot[(1:sz1)+i*sz1]            = diff(oldxDot[sysID_idx_diff+i])
-        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] oldxDot[sysID_idx+i] olda[sysID_idx+i] olda[sysID_idx+i].*oldpsiDot[sysID_idx+i].^2]
+        A_xDot[(1:sz1)+i*sz1,:]          = [oldyDot[sysID_idx+i] oldpsiDot[sysID_idx+i] oldxDot[sysID_idx+i] olda[sysID_idx+i]]
         y_xDot[(1:sz2)+i*sz2+5*sz1]      = diff(oldTraj.oldTraj[sysID_idx_diff_c+i,1,cL])
-        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldTraj[sysID_idx_c+i,1,cL]  oldTraj.oldInput[sysID_idx_c+i,1,cL] oldTraj.oldInput[sysID_idx_c+i,1,cL].*oldTraj.oldTraj[sysID_idx_c+i,3,cL].^2]
+        A_xDot[(1:sz2)+i*sz2+5*sz1,:]    = [oldTraj.oldTraj[sysID_idx_c+i,2,cL] oldTraj.oldTraj[sysID_idx_c+i,3,cL] oldTraj.oldTraj[sysID_idx_c+i,1,cL]  oldTraj.oldInput[sysID_idx_c+i,1,cL]]
         y_xDot[(1:sz1)+i*sz1+5*(sz1+sz2)]   = diff(oldxDot[sysID_idx_diff2+i])
-        A_xDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i] oldxDot[sysID_idx2+i] olda[sysID_idx2+i] olda[sysID_idx2+i].*oldpsiDot[sysID_idx2+i].^2]
+        A_xDot[(1:sz1)+i*sz1+5*(sz1+sz2),:] = [oldyDot[sysID_idx2+i] oldpsiDot[sysID_idx2+i] oldxDot[sysID_idx2+i] olda[sysID_idx2+i]]
     end
 
     # yDot
@@ -211,20 +209,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         println(coeffCost)
         warn("NaN value detected in coeffConst! Press to continue...")
     end
-    # println("Calculating ID coefficients..")
-    # println("xxxxxxxxxxxxxxxxxx")
-    # println(A_psi)
-    # println(y_psi)
-    # println("==================")
-    # println(A_yDot)
-    # println(y_yDot)
-    # println("******************")
 
-    #println("Writing zeros..")
     mpcCoeff.c_Psi = zeros(3)
     mpcCoeff.c_Vx = zeros(4)
     mpcCoeff.c_Vy = zeros(4)
-    #println("Finished writing zeros")
+
     if det(A_psi'*A_psi) != 0
         mpcCoeff.c_Psi = (A_psi'*A_psi)\A_psi'*y_psi
     else
