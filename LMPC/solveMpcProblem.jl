@@ -43,32 +43,32 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
-    #mpcSol.cost = zeros(6)
-    mpcSol.cost = [getvalue(mdl.costZ),getvalue(mdl.costZTerm),getvalue(mdl.constZTerm),getvalue(mdl.derivCost),getvalue(mdl.controlCost),getvalue(mdl.laneCost)]
+    mpcSol.cost = zeros(6)
+    mpcSol.cost = [0,getvalue(mdl.costZTerm),getvalue(mdl.constZTerm),getvalue(mdl.derivCost),0,getvalue(mdl.laneCost)]
     #mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),0,0]
 
     # Print information
-    println("--------------- MPC START -----------------------------------------------")
-    println("z0             = $(zCurr')")
-    #println("z_Ol           = $(sol_z)")
-    #println("u_Ol           = $(sol_u)")
-    println("c_Vx           = $(mpcCoeff.c_Vx)")
-    println("c_Vy           = $(mpcCoeff.c_Vy)")
-    println("c_Psi          = $(getvalue(mdl.c_Psi))")
-    println("ParInt         = $(getvalue(mdl.ParInt))")
-    #println("u_prev         = $(getvalue(mdl.uPrev))")
+    # println("--------------- MPC START -----------------------------------------------")
+    # println("z0             = $(zCurr')")
+    # #println("z_Ol           = $(sol_z)")
+    # #println("u_Ol           = $(sol_u)")
+    # println("c_Vx           = $(mpcCoeff.c_Vx)")
+    # println("c_Vy           = $(mpcCoeff.c_Vy)")
+    # println("c_Psi          = $(getvalue(mdl.c_Psi))")
+    # println("ParInt         = $(getvalue(mdl.ParInt))")
+    # #println("u_prev         = $(getvalue(mdl.uPrev))")
     println("Solved, status = $sol_status")
-    println("Predict. to s  = $(sol_z[end,6])")
-    println("costZ          = $(mpcSol.cost[1])")
-    println("termCost       = $(mpcSol.cost[2])")
-    println("termConst      = $(mpcSol.cost[3])")
-    println("derivCost      = $(mpcSol.cost[4])")
-    println("controlCost    = $(mpcSol.cost[5])")
-    println("laneCost       = $(mpcSol.cost[6])")
-    println("costZ: epsi    = $(norm(sol_z[:,4]))")
-    println("costZ: ey      = $(norm(sol_z[:,5]))")
-    println("costZ: v       = $(norm(sol_z[:,1]-0.8))")
-    println("--------------- MPC END ------------------------------------------------")
+    # println("Predict. to s  = $(sol_z[end,6])")
+    # println("costZ          = $(mpcSol.cost[1])")
+    # println("termCost       = $(mpcSol.cost[2])")
+    # println("termConst      = $(mpcSol.cost[3])")
+    # println("derivCost      = $(mpcSol.cost[4])")
+    # println("controlCost    = $(mpcSol.cost[5])")
+    # println("laneCost       = $(mpcSol.cost[6])")
+    # println("costZ: epsi    = $(norm(sol_z[:,4]))")
+    # println("costZ: ey      = $(norm(sol_z[:,5]))")
+    # println("costZ: v       = $(norm(sol_z[:,1]-0.8))")
+    # println("--------------- MPC END ------------------------------------------------")
     nothing
 end
 
@@ -100,12 +100,12 @@ function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::M
     #mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),getvalue(mdl.controlCost),0]
 
     # Print information
-    println("--------------- MPC PF START -----------------------------------------------")
-    println("z0             = $(zCurr')")
+    # println("--------------- MPC PF START -----------------------------------------------")
+    # println("z0             = $(zCurr')")
     println("Solved, status = $sol_status")
-    println("Predict. to s  = $(sol_z[end,1])")
-    #println("uPrev          = $(uPrev)")
-    println("--------------- MPC PF END ------------------------------------------------")
+    # println("Predict. to s  = $(sol_z[end,1])")
+    # #println("uPrev          = $(uPrev)")
+    # println("--------------- MPC PF END ------------------------------------------------")
     nothing
 end
 

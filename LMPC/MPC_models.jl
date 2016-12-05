@@ -57,7 +57,7 @@ type MpcModel
         z_Ref       = cat(2,v_ref*ones(N+1,1),zeros(N+1,5))       # Reference trajectory: path following -> stay on line and keep constant velocity
         u_Ref       = zeros(N,2)
 
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.07))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=0.08))#,check_derivatives_for_naninf="yes"))#,linear_solver="ma57",print_user_options="yes"))
 
         @variable( mdl, z_Ol[1:(N+1),1:7])
         @variable( mdl, u_Ol[1:N,1:2])
@@ -127,10 +127,13 @@ type MpcModel
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4])+z_Ol[i,2]*cos(z_Ol[i,4])))                                                      # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
         end
-        # for i=1:N-1 # Constraints on u:
-        #     @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.1)
-        #     @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.1)
-        # end
+        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] <= 0.1)
+        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] >= -0.6)
+        for i=1:N-1 # Constraints on u:
+            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.1)
+            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.6)
+        end
+
         @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] <= 0.05)
         @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] >= -0.05)
         for i=1:N-1 # Constraints on u:
@@ -148,7 +151,7 @@ type MpcModel
 
         # Lane cost
         # ---------------------------------
-        @NLexpression(mdl, laneCost, sum{100*eps[i] + 100*eps[i]^2,i=1:2})
+        @NLexpression(mdl, laneCost, sum{10000*eps[i]+10000*eps[i]^2,i=1:2})
 
         # Control Input cost
         # ---------------------------------
@@ -171,9 +174,9 @@ type MpcModel
         #@NLexpression(mdl, costZ, 0.5*sum{Q[i]*sum{(z_Ol[j,i]-z_Ref[j,i])^2,j=1:N+1},i=1:6})    # Follow trajectory
         #@NLexpression(mdl, costZ, 0.5*sum{(Q[1]*(sqrt(z_Ol[j,1]^2+z_Ol[j,2]^2)-1.0)^2 + Q[4]*z_Ol[j,4]^2 + Q[5]*z_Ol[j,5]^2),j=2:N+1})
 
-        @NLexpression(mdl, costZ, QderivU[1]*sum{z_Ol[i,7],i=1:N})
+        @NLexpression(mdl, costZ, 0*QderivU[1]*sum{z_Ol[i,7],i=1:N})
         # Solve model once
-        @NLobjective(mdl, Min, derivCost + constZTerm + costZTerm + laneCost + N)
+        @NLobjective(mdl, Min, derivCost + constZTerm + costZTerm + laneCost + N*Q_term_cost)
         #@NLobjective(mdl, Min, derivCost + costZ)
         sol_stat=solve(mdl)
         println("Finished solve 1: $sol_stat")
