@@ -46,7 +46,7 @@ type MpcModel
         delay_df        = mpcParams.delay_df
         delay_a         = mpcParams.delay_a
 
-        acc_f           = 10.0
+        acc_f           = 1.0
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
         
@@ -131,18 +131,18 @@ type MpcModel
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4])+z_Ol[i,2]*cos(z_Ol[i,4])))                                                      # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
         end
-        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] <= 0.2)
-        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] >= -0.5)
-        for i=1:N-1 # Constraints on u:
-            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.2)
-            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.5)
-        end
+        # @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] <= 0.05)
+        # @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] >= -0.2)
+        # for i=1:N-1 # Constraints on u:
+        #     @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.05)
+        #     @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.2)
+        # end
 
-        @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] <= 0.1)
-        @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] >= -0.1)
+        @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] <= 0.05)
+        @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] >= -0.05)
         for i=1:N-1 # Constraints on u:
-            @NLconstraint(mdl, u_Ol[i+1,2]-u_Ol[i,2] <= 0.1)
-            @NLconstraint(mdl, u_Ol[i+1,2]-u_Ol[i,2] >= -0.1)
+            @NLconstraint(mdl, u_Ol[i+1,2]-u_Ol[i,2] <= 0.05)
+            @NLconstraint(mdl, u_Ol[i+1,2]-u_Ol[i,2] >= -0.05)
         end
 
         # Cost functions
@@ -252,7 +252,7 @@ type MpcModel_pF
 
         v_ref       = mpcParams.vPathFollowing
 
-        acc_f       = 10.0
+        acc_f       = 1.0
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
 
