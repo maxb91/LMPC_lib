@@ -143,8 +143,8 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # ************************
     # collect indices for system ID
     n_sys_ID_prev = 60              # steps of sysID before current point in previous laps
-    n_sys_ID_post = 80              # steps of sysID after current point in previous laps
-    n_sys_ID_prev_c = 40            # steps of sysID before current point in current lap
+    n_sys_ID_post = 60              # steps of sysID after current point in previous laps
+    n_sys_ID_prev_c = 30            # steps of sysID before current point in current lap
 
     # vec_range_ID    = ()
     # for i=1:n_laps_sysID
@@ -162,7 +162,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     sz1 = size(sysID_idx,1)
     sz2 = size(sysID_idx_c,1)
-    sz = 0
+    sz2 = 0
     sz = sz1 + sz2
 
     # psiDot
