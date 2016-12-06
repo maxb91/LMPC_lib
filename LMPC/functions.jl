@@ -51,8 +51,8 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams.Q_term            = 1.0*[20.0,1.0,10.0,20.0,50.0]   # weights for terminal constraints (LMPC, for xDot,yDot,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[10.0,10.0]                 # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[1,1,1,1,1,0]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[5.0,20.0]                # cost matrix for derivative cost of inputs
-    mpcParams.Q_term_cost       = 1.0                         # scaling of Q-function
+    mpcParams.QderivU           = 1.0*[5.0,40.0]                # cost matrix for derivative cost of inputs
+    mpcParams.Q_term_cost       = 2.0                         # scaling of Q-function
     mpcParams.delay_df          = 3                             # steering delay
     mpcParams.delay_a           = 1                             # acceleration delay
 
@@ -65,7 +65,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams_pF.delay_df       = 3                         # steering delay (number of steps)
     mpcParams_pF.delay_a        = 1                         # acceleration delay
 
-    trackCoeff.nPolyCurvature   = 6                         # 4th order polynomial for curvature approximation
+    trackCoeff.nPolyCurvature   = 8                         # 4th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.width            = 0.6                       # width of the track (0.5m)
 
