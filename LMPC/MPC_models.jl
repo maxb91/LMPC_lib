@@ -46,7 +46,7 @@ type MpcModel
         delay_df        = mpcParams.delay_df
         delay_a         = mpcParams.delay_a
 
-        acc_f           = 1.0
+        acc_f           = 10.0
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
         
@@ -85,7 +85,7 @@ type MpcModel
 
         @NLparameter(mdl, z0[i=1:7] == 0)
         @NLparameter(mdl, coeff[i=1:n_poly_curv+1] == 0)
-        @NLparameter(mdl, c_Vx[i=1:4]  == 0)
+        @NLparameter(mdl, c_Vx[i=1:3]  == 0)
         @NLparameter(mdl, c_Vy[i=1:4]  == 0)
         @NLparameter(mdl, c_Psi[i=1:3] == 0)
         @NLparameter(mdl, coeffTermConst[i=1:order+1,j=1:2,k=1:5] == 0)
@@ -94,7 +94,7 @@ type MpcModel
 
         # Conditions for first solve:
         setvalue(z0[1],1)
-        setvalue(c_Vx[3],1)
+        setvalue(c_Vx[3],0.1)
 
         @NLconstraint(mdl, [i=1:7], z_Ol[1,i] == z0[i])
         #@NLconstraint(mdl, [i=1:N+1], z_Ol[i,5] <=  ey_max + eps[1])
@@ -124,17 +124,18 @@ type MpcModel
                 #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*u_Ol[i,1])                              # xDot
                 @NLconstraint(mdl, z_Ol[i+1,7]  == z_Ol[i,7] + dt*(u_Ol[i-delay_a,1]-z_Ol[i,7])*acc_f)
             end
-            #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*u_Ol[i,1])                              # xDot
-            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*z_Ol[i,7])                               # xDot
+            #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2] + c_Vx[2]*z_Ol[i,3] + c_Vx[3]*z_Ol[i,1] + c_Vx[4]*z_Ol[i,7])                               # xDot
+            #@NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(z_Ol[i,7] - 0.5*z_Ol[i,1]))                               # xDot
+            @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + c_Vx[1]*z_Ol[i,2]*z_Ol[i,3] + c_Vx[2]*z_Ol[i,1] + c_Vx[3]*z_Ol[i,7]) 
             @NLconstraint(mdl, z_Ol[i+1,4]  == z_Ol[i,4] + dt*(z_Ol[i,3]-dsdt[i]*c[i]))                                                                                 # ePsi
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4])+z_Ol[i,2]*cos(z_Ol[i,4])))                                                      # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
         end
-        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] <= 0.3)
-        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] >= -0.7)
+        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] <= 0.2)
+        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] >= -0.3)
         for i=1:N-1 # Constraints on u:
-            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.3)
-            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.7)
+            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.2)
+            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.3)
         end
 
         @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] <= 0.1)
@@ -155,7 +156,7 @@ type MpcModel
         # Lane cost
         # ---------------------------------
         #@NLexpression(mdl, laneCost, sum{100000*eps[i]+1000*eps[i]^2,i=1:2})
-        @NLexpression(mdl, laneCost, sum{100000*eps[i]+1000*eps[i]^2,i=2:N+1})
+        @NLexpression(mdl, laneCost, sum{10*eps[i]+100*eps[i]^2,i=2:N+1})
         
         # Lane cost
         # ---------------------------------
@@ -251,7 +252,7 @@ type MpcModel_pF
 
         v_ref       = mpcParams.vPathFollowing
 
-        acc_f       = 1.0
+        acc_f       = 10.0
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
 
