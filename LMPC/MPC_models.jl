@@ -132,10 +132,10 @@ type MpcModel
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                                                                # s
         end
         @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] <= 0.2)
-        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] >= -0.3)
+        @NLconstraint(mdl, u_Ol[1,1]-uPrev[1,1] >= -0.5)
         for i=1:N-1 # Constraints on u:
             @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] <= 0.2)
-            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.3)
+            @NLconstraint(mdl, u_Ol[i+1,1]-u_Ol[i,1] >= -0.5)
         end
 
         @NLconstraint(mdl, u_Ol[1,2]-uPrev[1,2] <= 0.1)
