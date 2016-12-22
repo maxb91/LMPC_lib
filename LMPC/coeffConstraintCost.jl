@@ -46,7 +46,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     #n_laps_sysID    = lapStatus.currentLap-2
     #selected_laps = [lapStatus.currentLap-1,lapStatus.currentLap-2]
     #selected_laps = collect(lapStatus.currentLap-1:-1:lapStatus.currentLap-n_laps_sysID)
-    selected_laps = zeros(2)
+    selected_laps    = zeros(Int64,2)
     selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
     selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
 

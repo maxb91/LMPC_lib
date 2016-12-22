@@ -17,7 +17,7 @@ function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
         c += z[1]^(n+1-i)*coeff[i]
     end
 
-    bta = atan(L_a/(L_a+L_b)*tan(u[2]+abs(u[2])*u[2]))
+    bta = atan(L_a/(L_a+L_b)*tan(u[2]))
     dsdt = z[4]*cos(z[3]+bta)/(1-z[2]*c)
 
     zNext = copy(z)
