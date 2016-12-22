@@ -15,7 +15,7 @@
 # i = 5 -> eY
 # i = 6 -> s
 
-function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
+function solveMpcProblem_LMPC(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcParams::MpcParams,trackCoeff::TrackCoeff,lapStatus::LapStatus,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
 
     # Load Parameters
     sol_status::Symbol
@@ -25,9 +25,6 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     # Update current initial condition, curvature and System ID coefficients
     setvalue(mdl.z0,zCurr)
     setvalue(mdl.uPrev,uPrev)
-    setvalue(mdl.c_Vx,mpcCoeff.c_Vx)            # System ID coefficients
-    setvalue(mdl.c_Vy,mpcCoeff.c_Vy)
-    setvalue(mdl.c_Psi,mpcCoeff.c_Psi)
     setvalue(mdl.coeff,trackCoeff.coeffCurvature)       # Track curvature
     setvalue(mdl.coeffTermCost,mpcCoeff.coeffCost)      # Terminal cost
     setvalue(mdl.coeffTermConst,mpcCoeff.coeffConst)    # Terminal constraints
@@ -52,19 +49,17 @@ function solveMpcProblem(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mpcPara
     println("z0             = $(zCurr')")
     # println("z_Ol           = $(sol_z)")
     # println("u_Ol           = $(sol_u)")
-    # println("c_Vx           = $(mpcCoeff.c_Vx)")
-    # println("c_Vy           = $(mpcCoeff.c_Vy)")
-    # println("c_Psi          = $(mpcCoeff.c_Psi)")
     println("ParInt         = $(getvalue(mdl.ParInt))")
     # println("u_prev         = $(getvalue(mdl.uPrev))")
     println("Solved, status = $sol_status")
-    println("Predict. to s  = $(sol_z[end,6])")
+    println("Predict. to s  = $(sol_z[end,1])")
     println("costZ          = $(mpcSol.cost[1])")
     println("termCost       = $(mpcSol.cost[2])")
     println("termConst      = $(mpcSol.cost[3])")
     println("derivCost      = $(mpcSol.cost[4])")
     println("controlCost    = $(mpcSol.cost[5])")
     println("laneCost       = $(mpcSol.cost[6])")
+    println("eps            = ", getvalue(mdl.eps))
     println("--------------- MPC END ------------------------------------------------")
     nothing
 end

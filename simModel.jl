@@ -10,7 +10,12 @@ function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     zNext::Array{Float64}
     L_a = modelParams.l_A
     L_b = modelParams.l_B
-    c = ([z[1]^8 z[1]^7 z[1]^6 z[1]^5 z[1]^4 z[1]^3 z[1]^2 z[1] 1]*coeff)[1]        # Polynomial
+
+    c = 0.0
+    n = size(coeff,1)-1     # polynomial degree
+    for i=1:n+1
+        c += z[1]^(n+1-i)*coeff[i]
+    end
 
     bta = atan(L_a/(L_a+L_b)*tan(u[2]+abs(u[2])*u[2]))
     dsdt = z[4]*cos(z[3]+bta)/(1-z[2]*c)
@@ -19,7 +24,7 @@ function simKinModel(z::Array{Float64},u::Array{Float64},dt::Float64,coeff::Arra
     zNext[1] = z[1] + dt*dsdt                               # s
     zNext[2] = z[2] + dt*z[4] * sin(z[3] + bta)             # eY
     zNext[3] = z[3] + dt*(z[4]/L_a*sin(bta)-dsdt*c)         # ePsi
-    zNext[4] = z[4] + dt*(u[1] - modelParams.c_f*z[4])      # v
+    zNext[4] = z[4] + dt*(u[1] - 0.5*z[4])                  # v
 
     return zNext
 end
