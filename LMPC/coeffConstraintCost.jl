@@ -49,7 +49,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     selected_laps    = zeros(Int64,2)
     selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
     selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
-
+    println("Choosing from lap costs: ", oldTraj.oldCost[2:lapStatus.currentLap-2])
     # Select the old data
     oldS            = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
     oldeY           = oldTraj.oldTraj[:,2,selected_laps]::Array{Float64,3}

@@ -52,20 +52,20 @@ function solveMpcProblem_LMPC(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mp
     #mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),0,0]
 
     # Print information
-    println("--------------- MPC START -----------------------------------------------")
-    println("z0             = ", zCurr')
-    println("u              = ", sol_u[1,:])
-    println("ParInt         = ", getvalue(mdl.ParInt))
-    println("Solved, status = ", sol_status)
-    println("Predict. to s  = ", sol_z[end,1])
-    println("costZ          = ", mpcSol.cost[1])
-    println("termCost       = ", mpcSol.cost[2])
-    println("termConst      = ", mpcSol.cost[3])
-    println("derivCost      = ", mpcSol.cost[4])
-    println("controlCost    = ", mpcSol.cost[5])
-    println("laneCost       = ", mpcSol.cost[6])
-    println("eps            = ", getvalue(mdl.eps))
-    println("--------------- MPC END ------------------------------------------------")
+    # println("--------------- MPC START -----------------------------------------------")
+    # println("z0             = ", zCurr')
+    # println("u              = ", sol_u[1,:])
+    # println("ParInt         = ", getvalue(mdl.ParInt))
+    # println("Solved, status = ", sol_status)
+    # println("Predict. to s  = ", sol_z[end,1])
+    # println("costZ          = ", mpcSol.cost[1])
+    # println("termCost       = ", mpcSol.cost[2])
+    # println("termConst      = ", mpcSol.cost[3])
+    # println("derivCost      = ", mpcSol.cost[4])
+    # println("controlCost    = ", mpcSol.cost[5])
+    # println("laneCost       = ", mpcSol.cost[6])
+    # println("eps            = ", getvalue(mdl.eps))
+    # println("--------------- MPC END ------------------------------------------------")
     nothing
 end
 
@@ -85,6 +85,12 @@ function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::M
 
     # Solve Problem and return solution
     sol_status  = solve(mdl.mdl)
+    k = 1
+    while sol_status != :Optimal && k<=10
+        println("Not solved optimally. Solving again.")
+        sol_status  = solve(mdl.mdl)
+        k += 1
+    end
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
 
@@ -97,11 +103,11 @@ function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::M
     mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),getvalue(mdl.controlCost),0]
 
     # Print information
-    println("--------------- MPC PF START -----------------------------------------------")
-    println("z0             = ", zCurr')
-    println("Solved, status = ", sol_status)
-    println("Predict. to s  = ", sol_z[end,1])
-    println("--------------- MPC PF END ------------------------------------------------")
+    # println("--------------- MPC PF START -----------------------------------------------")
+    # println("z0             = ", zCurr')
+    # println("Solved, status = ", sol_status)
+    # println("Predict. to s  = ", sol_z[end,1])
+    # println("--------------- MPC PF END ------------------------------------------------")
     nothing
 end
 

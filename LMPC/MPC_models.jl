@@ -50,7 +50,7 @@ type MpcModel
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
 
         # Create Model
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=1.0))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=5.0))#,linear_solver="ma57",print_user_options="yes"))
 
         # Create variables (these are going to be optimized)
         @variable( mdl, z_Ol[1:(N+1),1:4], start = 0)          # z = s, ey, epsi, v
