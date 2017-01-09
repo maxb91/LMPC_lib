@@ -48,18 +48,18 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams.N                 = 10
     mpcParams.Q                 = [10.0,0.0,0.0,1.0,10.0,0.0]   # Q (only for path following mode)
     mpcParams.vPathFollowing    = 0.8                           # reference speed for first lap of path following
-    mpcParams.Q_term            = 100.0*[0.1,0.1,0.1]     # weights for terminal constraints (LMPC, for eY, ePsi, v)
+    mpcParams.Q_term            = 1000.0*[0.1,0.1,0.1,0.1,0.1]     # weights for terminal constraints (LMPC, for eY, ePsi, v)
     mpcParams.R                 = 0*[10.0,10.0]                 # put weights on a and d_f
-    mpcParams.QderivZ           = 0.01*[0,1,1,1]            # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[1.0,1.0]                 # cost matrix for derivative cost of inputs
-    mpcParams.Q_term_cost       = 0.1                           # scaling of Q-function
+    mpcParams.QderivZ           = 0.0*[1,1,1,1,1,0]            # cost matrix for derivative cost of states
+    mpcParams.QderivU           = 1.0*[10.0,10.0]                 # cost matrix for derivative cost of inputs
+    mpcParams.Q_term_cost       = 1.0                           # scaling of Q-function
 
     mpcParams_pF.N              = 10
     mpcParams_pF.Q              = [0.0,10.0,0.0,1.0]
     mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
     mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
-    mpcParams_pF.QderivU        = 0.1*[1,1]                # cost matrix for derivative cost of inputs
-    mpcParams_pF.vPathFollowing = 1.0                       # reference speed for first lap of path following
+    mpcParams_pF.QderivU        = 1.0*[1,1]                # cost matrix for derivative cost of inputs
+    mpcParams_pF.vPathFollowing = 0.8                       # reference speed for first lap of path following
 
     trackCoeff.nPolyCurvature   = 8                         # n-th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)

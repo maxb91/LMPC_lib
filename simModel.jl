@@ -32,12 +32,12 @@ end
 function simDynModel_exact(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::ModelParams,trackCoeff::TrackCoeff)
     # This function uses smaller steps to achieve higher fidelity than we would achieve using longer timesteps
     z_final = copy(z)
-    u[1] = min(u[1],3)
-    u[1] = max(u[1],-3)
-    u[2] = min(u[2],pi/6)
-    u[2] = max(u[2],-pi/6)
-    dtn = dt/100
-    for i=1:100
+    # u[1] = min(u[1],3)
+    # u[1] = max(u[1],-3)
+    # u[2] = min(u[2],pi/6)
+    # u[2] = max(u[2],-pi/6)
+    dtn = dt/10
+    for i=1:10
         z_final = simDynModel(z_final,u,dtn,modelParams,trackCoeff)
     end
     return z_final
@@ -62,8 +62,15 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams
         warn("Large tire angles: a_F = $a_F, a_R = $a_R, xDot = $(z[1]), d_F = $(u[2])")
     end
     
-    FyF = -pacejka(a_F)
-    FyR = -pacejka(a_R)
+    #FyF = -pacejka(a_F)
+    #FyR = -pacejka(a_R)
+    FyF = 0
+    FyR = 0
+    if abs(z[1]) >= 0.1
+        FyF = -10*((z[2] + L_f*z[3])/abs(z[1]) - u[2])
+        FyR = -10*((z[2] - L_r*z[3])/abs(z[1]))
+    end
+
     coeff = trackCoeff.coeffCurvature
     
     c = 0.0                                                               # Polynomial for curvature
@@ -94,7 +101,7 @@ function pacejka(a)
     D = mu * m * g/2
     C_alpha_f = D*sin(C*atan(B*a))
     #return C_alpha_f
-    return 
+    return 10*a
 end
 
 function simDynModel_exact_xy(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams::ModelParams)

@@ -46,15 +46,17 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     #n_laps_sysID    = lapStatus.currentLap-2
     #selected_laps = [lapStatus.currentLap-1,lapStatus.currentLap-2]
     #selected_laps = collect(lapStatus.currentLap-1:-1:lapStatus.currentLap-n_laps_sysID)
-    selected_laps = zeros(2)
+    selected_laps = zeros(Int64,2)
     selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
     selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
 
     # Select the old data
-    oldS            = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
-    oldeY           = oldTraj.oldTraj[:,2,selected_laps]::Array{Float64,3}
-    oldePsi         = oldTraj.oldTraj[:,3,selected_laps]::Array{Float64,3}
-    oldV            = oldTraj.oldTraj[:,4,selected_laps]::Array{Float64,3}
+    oldvX           = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
+    oldvY           = oldTraj.oldTraj[:,2,selected_laps]::Array{Float64,3}
+    oldpsiDot       = oldTraj.oldTraj[:,3,selected_laps]::Array{Float64,3}
+    oldePsi         = oldTraj.oldTraj[:,4,selected_laps]::Array{Float64,3}
+    oldeY           = oldTraj.oldTraj[:,5,selected_laps]::Array{Float64,3}
+    oldS            = oldTraj.oldTraj[:,6,selected_laps]::Array{Float64,3}
     olda            = oldTraj.oldInput[:,1,selected_laps]::Array{Float64,3}
     olddF           = oldTraj.oldInput[:,2,selected_laps]::Array{Float64,3}
 
@@ -109,9 +111,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # Compute the coefficients
     coeffConst = zeros(Order+1,2,5)
     for i=1:2
-        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
-        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
-        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldV[vec_range[i]]
+        coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldvX[vec_range[i]]
+        coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldvY[vec_range[i]]
+        coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldpsiDot[vec_range[i]]
+        coeffConst[:,i,4]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
+        coeffConst[:,i,5]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
     end
 
     # Now compute the final cost coefficients
