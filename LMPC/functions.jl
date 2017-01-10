@@ -45,29 +45,29 @@ end
 
 function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,trackCoeff::TrackCoeff,modelParams::ModelParams,
                                 posInfo::PosInfo,oldTraj::OldTrajectory,mpcCoeff::MpcCoeff,lapStatus::LapStatus,buffersize::Int64)
-    mpcParams.N                 = 12
+    mpcParams.N                 = 30
     mpcParams.Q                 = [10.0,0.0,0.0,1.0,10.0,0.0]   # Q (only for path following mode)
     mpcParams.vPathFollowing    = 0.8                           # reference speed for first lap of path following
-    mpcParams.Q_term            = 1000.0*[0.1,0.1,0.1,0.01,0.01]     # weights for terminal constraints (LMPC, for v_x,v_y,psiDot,ePsi,eY)
+    mpcParams.Q_term            = 1000.0*[0.1,0.1,0.1,0.1,0.1]  # weights for terminal constraints (LMPC, for v_x,v_y,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[10.0,10.0]                 # put weights on a and d_f
-    mpcParams.QderivZ           = 1.0*[1,1,1,1,1,0]            # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[10.0,10.0]                 # cost matrix for derivative cost of inputs
+    mpcParams.QderivZ           = 1.0*[1,1,1,1,1,0]             # cost matrix for derivative cost of states
+    mpcParams.QderivU           = 1.0*[10.0,10.0]               # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 1.0                           # scaling of Q-function
 
-    mpcParams_pF.N              = 12
-    mpcParams_pF.Q              = [0.0,10.0,0.0,1.0]
-    mpcParams_pF.R              = 0*[1.0,1.0]               # put weights on a and d_f
-    mpcParams_pF.QderivZ        = 0.0*[0,0,0.1,0]           # cost matrix for derivative cost of states
-    mpcParams_pF.QderivU        = 1.0*[1,1]                # cost matrix for derivative cost of inputs
-    mpcParams_pF.vPathFollowing = 0.8                       # reference speed for first lap of path following
+    mpcParams_pF.N              = 30
+    mpcParams_pF.Q              = [1.0,0.0,0.0,1.0,10.0,0.0]    # cost on vx, vy, psidot, epsi, ey, s
+    mpcParams_pF.R              = 0.0*[1.0,1.0]               # put weights on a and d_f
+    mpcParams_pF.QderivZ        = 0.0*[0.0,0.0,0.0,0.0,0.0,0.0]           # cost matrix for derivative cost of states
+    mpcParams_pF.QderivU        = 10.0*[10,1]                # cost matrix for derivative cost of inputs
+    mpcParams_pF.vPathFollowing = 2.0                       # reference speed for first lap of path following
 
-    trackCoeff.nPolyCurvature   = 8                         # n-th order polynomial for curvature approximation
+    trackCoeff.nPolyCurvature   = 6                         # n-th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.width            = 0.8                       # width of the track
 
     modelParams.l_A             = 0.125
     modelParams.l_B             = 0.125
-    modelParams.dt              = 0.1                   # sampling time, also controls the control loop, affects delay_df and Qderiv
+    modelParams.dt              = 0.02                   # sampling time, also controls the control loop, affects delay_df and Qderiv
     modelParams.m               = 1.98
     modelParams.I_z             = 0.03
     modelParams.c_f             = 0.5                   # friction coefficient: xDot = - c_f*xDot (aerodynamic+tire+motor (mostly motor))

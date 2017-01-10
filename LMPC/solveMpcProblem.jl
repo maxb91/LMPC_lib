@@ -75,7 +75,7 @@ function solveMpcProblem_LMPC(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mp
     end
 end
 
-function solveMpcProblem_pathFollow(mdl::MpcModel_pF,mpcSol::MpcSol,mpcParams::MpcParams,trackCoeff::TrackCoeff,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
+function solveMpcProblem_pathFollow(mdl::MpcModel_dyn_pF,mpcSol::MpcSol,mpcParams::MpcParams,trackCoeff::TrackCoeff,posInfo::PosInfo,modelParams::ModelParams,zCurr::Array{Float64},uPrev::Array{Float64})
 
     # Load Parameters
     coeffCurvature  = trackCoeff.coeffCurvature::Array{Float64,1}
