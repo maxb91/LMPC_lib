@@ -51,7 +51,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams.Q_term            = 1000.0*[0.1,0.1,0.1,0.1,0.1]  # weights for terminal constraints (LMPC, for v_x,v_y,psiDot,ePsi,eY)
     mpcParams.R                 = 0*[10.0,10.0]                 # put weights on a and d_f
     mpcParams.QderivZ           = 1.0*[1,1,1,1,1,0]             # cost matrix for derivative cost of states
-    mpcParams.QderivU           = 1.0*[10.0,10.0]               # cost matrix for derivative cost of inputs
+    mpcParams.QderivU           = 10.0*[1.0,1.0]               # cost matrix for derivative cost of inputs
     mpcParams.Q_term_cost       = 1.0                           # scaling of Q-function
 
     mpcParams_pF.N              = 30
@@ -71,18 +71,24 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     modelParams.m               = 1.98
     modelParams.I_z             = 0.03
     modelParams.c_f             = 0.5                   # friction coefficient: xDot = - c_f*xDot (aerodynamic+tire+motor (mostly motor))
+    modelParams.g               = 9.81
+    modelParams.mu              = 0.8
+    modelParams.B               = 10.0
+    modelParams.C               = 1.9
+    modelParams.D               = 1.0
 
     posInfo.s_target            = 5.0
 
-    oldTraj.oldTraj             = NaN*ones(buffersize,6,25)
-    oldTraj.oldInput            = zeros(buffersize,2,25)
-    oldTraj.oldTimes            = NaN*ones(buffersize,25)
-    oldTraj.count               = ones(25)*2
-    oldTraj.oldCost             = ones(Int64,25)                   # dummies for initialization
+    n_laps_max                  = 30
+    oldTraj.oldTraj             = NaN*ones(buffersize,6,n_laps_max)
+    oldTraj.oldInput            = zeros(buffersize,2,n_laps_max)
+    oldTraj.oldTimes            = NaN*ones(buffersize,n_laps_max)
+    oldTraj.count               = ones(n_laps_max)*2
+    oldTraj.oldCost             = ones(Int64,n_laps_max)                   # dummies for initialization
     oldTraj.prebuf              = 30
     oldTraj.postbuf             = 30
-    oldTraj.idx_start           = zeros(25)
-    oldTraj.idx_end             = zeros(25)
+    oldTraj.idx_start           = zeros(n_laps_max)
+    oldTraj.idx_end             = zeros(n_laps_max)
 
     mpcCoeff.order              = 4
     mpcCoeff.coeffCost          = zeros(mpcCoeff.order+1,2)

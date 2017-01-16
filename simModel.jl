@@ -67,14 +67,21 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams
     FyF = 0
     FyR = 0
     if abs(z[1]) >= 0.1
-        FyF = -133*((z[2] + L_f*z[3])/abs(z[1]) - u[2])
-        FyR = -133*((z[2] - L_r*z[3])/abs(z[1]))
+        a_F     = atan((z[2] + L_f*z[3])/abs(z[1])) - u[2]
+        a_R     = atan((z[2] - L_r*z[3])/abs(z[1]))
+        a_F = (z[2] + L_f*z[3])/z[1] - u[2]
+        a_R = (z[2] - L_r*z[3])/z[1]
+        #FyF = -133*((z[2] + L_f*z[3])/abs(z[1]) - u[2])
+        #FyR = -133*((z[2] - L_r*z[3])/abs(z[1]))
         #FyF = -pacejka((z[2] + L_f*z[3])/abs(z[1]) - u[2])
         #FyR = -pacejka((z[2] - L_r*z[3])/abs(z[1]))
+        FyF = -pacejka(a_F,modelParams)
+        FyR = -pacejka(a_R,modelParams)
     end
 
     coeff = trackCoeff.coeffCurvature
-    println("F_F = ",FyF,", F_R = ",FyR)
+    #println("F_F = ",FyF,", F_R = ",FyR)
+    println("a_F = ",a_F,", a_R = ",a_R)
     c = 0.0                                                               # Polynomial for curvature
     for i=1:trackCoeff.nPolyCurvature+1
         c += z[6]^(trackCoeff.nPolyCurvature+1-i)*coeff[i]
@@ -94,14 +101,14 @@ function simDynModel(z::Array{Float64},u::Array{Float64},dt::Float64,modelParams
     return zNext
 end
 
-function pacejka(a)
+function pacejka(a,modelParams::ModelParams)
     # directly returns the tire force based on the pacejka model
-    B = 10.0             # This value determines the steepness of the curve
-    C = 1.9
-    D = 1.0
-    mu = 0.8            # Friction coefficient (responsible for maximum lateral tire force)
-    m = 1.98
-    g = 9.81
+    g           = modelParams.g
+    mu          = modelParams.mu
+    B           = modelParams.B             # This value determines the steepness of the curve
+    C           = modelParams.C
+    D           = modelParams.D
+    m           = modelParams.m
     Fn = 0.5*m*g*mu
     C_alpha_f = D*sin(C*atan(B*a))
     return Fn*C_alpha_f

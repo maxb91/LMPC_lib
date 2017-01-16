@@ -90,5 +90,10 @@ type ModelParams
     z_ub::Array{Float64}
     c0::Array{Float64}
     c_f::Float64
+    mu::Float64
+    g::Float64
+    B::Float64
+    C::Float64
+    D::Float64
     ModelParams(l_A=0.25,l_B=0.25,m=1.98,I_z=0.24,dt=0.1,u_lb=Float64[],u_ub=Float64[],z_lb=Float64[],z_ub=Float64[],c0=Float64[],c_f=0.0) = new(l_A,l_B,m,I_z,dt,u_lb,u_ub,z_lb,z_ub,c0,c_f)
 end

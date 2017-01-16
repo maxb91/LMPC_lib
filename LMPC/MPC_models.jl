@@ -41,6 +41,11 @@ type MpcModel
         R           = mpcParams.R
         QderivZ     = mpcParams.QderivZ::Array{Float64,1}
         QderivU     = mpcParams.QderivU::Array{Float64,1}
+        g           = modelParams.g
+        mu          = modelParams.mu
+        B           = modelParams.B             # This value determines the steepness of the curve
+        C           = modelParams.C
+        D           = modelParams.D
 
         Q_term          = mpcParams.Q_term
         order           = mpcCoeff.order       # polynomial order of terminal constraints and cost approximation
@@ -52,18 +57,18 @@ type MpcModel
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
 
         # Create Model
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=1.0))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=10.0))#,linear_solver="ma57",print_user_options="yes"))
 
         # Create variables (these are going to be optimized)
         @variable( mdl, z_Ol[1:(N+1),1:6], start = 0)          # z = s, ey, epsi, v
         @variable( mdl, u_Ol[1:N,1:2], start = 0)
-        @variable( mdl, 0 <= ParInt <= 1)
+        #@variable( mdl, 0 <= ParInt <= 1)
         @variable( mdl, eps[1:N+1] >= 0)                   # eps for soft lane constraints
 
         # Set bounds
-        z_lb_6s = ones(mpcParams.N+1,1)*[0.1  -Inf -Inf -Inf -Inf -Inf]                  # lower bounds on states
-        z_ub_6s = ones(mpcParams.N+1,1)*[Inf   Inf  Inf  Inf  Inf  Inf]                  # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [-1.0  -0.3]                           # lower bounds on steering
+        z_lb_6s = ones(mpcParams.N+1,1)*[0.1   -Inf -Inf -Inf -Inf -Inf]                  # lower bounds on states
+        z_ub_6s = ones(mpcParams.N+1,1)*[10.0   Inf  Inf  Inf  Inf  Inf]                  # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [-5.0  -0.3]                           # lower bounds on steering
         u_ub_6s = ones(mpcParams.N,1) * [5.0   0.3]                            # upper bounds
 
         for i=1:2
@@ -72,7 +77,7 @@ type MpcModel
                 setupperbound(u_Ol[j,i], u_ub_6s[j,i])
             end
         end
-        for i=1:4
+        for i=1:6
             for j=1:N+1
                 setlowerbound(z_Ol[j,i], z_lb_6s[j,i])
                 setupperbound(z_Ol[j,i], z_ub_6s[j,i])
@@ -95,14 +100,19 @@ type MpcModel
         @NLconstraint(mdl, [i=1:6], z_Ol[1,i] == z0[i])         # initial condition
         for i=1:N
             @NLexpression(mdl, dsdt[i], (z_Ol[i,1]*cos(z_Ol[i,4]) - z_Ol[i,2]*sin(z_Ol[i,4]))/(1-z_Ol[i,5]*c[i]))
-            @NLexpression(mdl, FyF[i], -133*(((z_Ol[i,2] + L_f*z_Ol[i,3])/z_Ol[i,1]) - u_Ol[i,2]))
-            @NLexpression(mdl, FyR[i], -133*((z_Ol[i,2] - L_r*z_Ol[i,3])/z_Ol[i,1]))
-
-            @NLconstraint(mdl, FyF[i] <= 8)
-            @NLconstraint(mdl, FyF[i] >= -8)
-            @NLconstraint(mdl, FyR[i] <= 8)
-            @NLconstraint(mdl, FyR[i] >= -8)
             
+            @NLexpression(mdl, FyF[i], -0.5*mass*g*mu*D*sin(C*atan(B*(((z_Ol[i,2] + L_f*z_Ol[i,3])/z_Ol[i,1]) - u_Ol[i,2]))))
+            @NLexpression(mdl, FyR[i], -0.5*mass*g*mu*D*sin(C*atan(B*((z_Ol[i,2] - L_r*z_Ol[i,3])/z_Ol[i,1]))))
+            
+            #@NLexpression(mdl, FyF[i], -0.5*mass*g*mu*D*sin(C*atan(B*(atan((z_Ol[i,2] + L_f*z_Ol[i,3])/(z_Ol[i,1])) - u_Ol[i,2]))))
+            #@NLexpression(mdl, FyR[i], -0.5*mass*g*mu*D*sin(C*atan(B*(atan((z_Ol[i,2] - L_r*z_Ol[i,3])/(z_Ol[i,1]))))))
+
+            # Limit maximum slip angles
+            # @NLconstraint(mdl, atan((z_Ol[i,2] + L_f*z_Ol[i,3])/(z_Ol[i,1])) - u_Ol[i,2] <= 0.6)
+            # @NLconstraint(mdl, atan((z_Ol[i,2] + L_f*z_Ol[i,3])/(z_Ol[i,1])) - u_Ol[i,2] >= -0.6)
+            # @NLconstraint(mdl, atan((z_Ol[i,2] - L_r*z_Ol[i,3])/(z_Ol[i,1])) <= 0.6)
+            # @NLconstraint(mdl, atan((z_Ol[i,2] - L_r*z_Ol[i,3])/(z_Ol[i,1])) >= -0.6)
+
             @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(u_Ol[i,1] + z_Ol[i,2]*z_Ol[i,3] - 0.5*z_Ol[i,1])  )                  # xDot
             @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + dt*(1/mass*(FyF[i]*cos(u_Ol[i,2]) + FyR[i]) - z_Ol[i,3]*z_Ol[i,1])  )       # yDot
             @NLconstraint(mdl, z_Ol[i+1,3]  == z_Ol[i,3] + dt*(1/I_z*(L_f*FyF[i] - L_r*FyR[i]))  )                                  # psiDot
@@ -119,8 +129,8 @@ type MpcModel
                                             QderivU[2]*((uPrev[1,2]-u_Ol[1,2])^2+sum{(u_Ol[i,2]-u_Ol[i+1,2])^2,i=1:N-1}))
         # Control Input cost
         # ---------------------------------
-        @NLexpression(mdl, controlCost, 0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
-                                        0.5*R[2]*sum{(u_Ol[i,2])^2,i=1:N})
+        @NLexpression(mdl, controlCost, 0)#0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
+                                        #0.5*R[2]*sum{(u_Ol[i,2])^2,i=1:N})
         
         # State cost
         # ---------------------------------
@@ -128,22 +138,25 @@ type MpcModel
 
         # Lane cost
         # ---------------------------------
-        @NLexpression(mdl, laneCost, sum{10*eps[i] + 100*eps[i]^2,i=2:N+1})
+        @NLexpression(mdl, laneCost, sum{10*eps[i] + 1*eps[i]^2,i=2:N+1})  # 10 / 100
 
 
         # Terminal constraints (soft), starting from 2nd lap
         # ---------------------------------
-        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j])+
-                                            (1-ParInt)*(sum{coeffTermConst[i,2,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,2,j])-z_Ol[N+1,j])^2,j=1:5})
+        #@NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j])+
+        #                                    (1-ParInt)*(sum{coeffTermConst[i,2,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,2,j])-z_Ol[N+1,j])^2,j=1:5})
+        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j]-z_Ol[N+1,j])^2,j=1:5})
         
+        #@NLconstraint(mdl, constZTerm <= 10)
         # Terminal cost
         # ---------------------------------
         # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-        @NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
-                                      (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
+        #@NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
+        #                              (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
+        @NLexpression(mdl, costZTerm, Q_term_cost*sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])
 
         # Objective function
-        @NLobjective(mdl, Min, costZ + derivCost + controlCost + constZTerm + costZTerm + laneCost)
+        @NLobjective(mdl, Min, costZ + derivCost + constZTerm + costZTerm + laneCost)
 
         m.mdl = mdl
         m.z0 = z0
@@ -155,7 +168,7 @@ type MpcModel
         m.costZ = costZ
         m.controlCost = controlCost
 
-        m.ParInt = ParInt
+        #m.ParInt = ParInt
 
         m.coeffTermCost = coeffTermCost
         m.coeffTermConst = coeffTermConst
@@ -204,16 +217,16 @@ type MpcModel_dyn_pF
         R           = mpcParams.R
         QderivZ     = mpcParams.QderivZ::Array{Float64,1}
         QderivU     = mpcParams.QderivU::Array{Float64,1}
-        g = 9.81
-        mu = 0.8
-        B = 10.0             # This value determines the steepness of the curve
-        C = 1.9
-        D = 1.0
+        g           = modelParams.g
+        mu          = modelParams.mu
+        B           = modelParams.B             # This value determines the steepness of the curve
+        C           = modelParams.C
+        D           = modelParams.D
 
         n_poly_curv = trackCoeff.nPolyCurvature         # polynomial degree of curvature approximation
 
         # Create Model
-        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=3.0))#,linear_solver="ma57",print_user_options="yes"))
+        mdl = Model(solver = IpoptSolver(print_level=0,max_cpu_time=10.0))#,linear_solver="ma57",print_user_options="yes"))
         
         # Create function-specific parameters
         z_Ref::Array{Float64,2}
@@ -227,8 +240,8 @@ type MpcModel_dyn_pF
         # Set bounds
         z_lb_6s = ones(mpcParams.N+1,1)*[0.1  -Inf -Inf -Inf -Inf -Inf]                  # lower bounds on states
         z_ub_6s = ones(mpcParams.N+1,1)*[Inf   Inf  Inf  Inf  Inf  Inf]                  # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [-1.0  -0.3]                           # lower bounds
-        u_ub_6s = ones(mpcParams.N,1) * [5.0   0.3]                            # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [-10.0  -0.3]                           # lower bounds
+        u_ub_6s = ones(mpcParams.N,1) * [10.0   0.3]                            # upper bounds
 
         for i=1:2
             for j=1:N
@@ -254,15 +267,25 @@ type MpcModel_dyn_pF
         @NLconstraint(mdl, [i=1:6], z_Ol[1,i] == z0[i])         # initial condition
         for i=1:N
             @NLexpression(mdl, dsdt[i], (z_Ol[i,1]*cos(z_Ol[i,4]) - z_Ol[i,2]*sin(z_Ol[i,4]))/(1-z_Ol[i,5]*c[i]))
-            @NLexpression(mdl, FyF[i], -133*(((z_Ol[i,2] + L_f*z_Ol[i,3])/z_Ol[i,1]) - u_Ol[i,2]))
-            @NLexpression(mdl, FyR[i], -133*((z_Ol[i,2] - L_r*z_Ol[i,3])/z_Ol[i,1]))
+            #@NLexpression(mdl, FyF[i], -133*(((z_Ol[i,2] + L_f*z_Ol[i,3])/z_Ol[i,1]) - u_Ol[i,2]))
+            #@NLexpression(mdl, FyR[i], -133*((z_Ol[i,2] - L_r*z_Ol[i,3])/z_Ol[i,1]))
             
-            @NLconstraint(mdl, FyF[i] <= 8)
-            @NLconstraint(mdl, FyF[i] >= -8)
-            @NLconstraint(mdl, FyR[i] <= 8)
-            @NLconstraint(mdl, FyR[i] >= -8)
-            #@NLexpression(mdl, FyF[i], -0.5*mass*g*mu*D*sin(C*atan(B*(((z_Ol[i,2] + L_f*z_Ol[i,3])/z_Ol[i,1]) - u_Ol[i,2]))))
-            #@NLexpression(mdl, FyR[i], -0.5*mass*g*mu*D*sin(C*atan(B*((z_Ol[i,2] - L_r*z_Ol[i,3])/z_Ol[i,1]))))
+            @NLexpression(mdl, FyF[i], -0.5*mass*g*mu*D*sin(C*atan(B*(atan((z_Ol[i,2] + L_f*z_Ol[i,3])/(z_Ol[i,1])) - u_Ol[i,2]))))
+            @NLexpression(mdl, FyR[i], -0.5*mass*g*mu*D*sin(C*atan(B*atan((z_Ol[i,2] - L_r*z_Ol[i,3])/(z_Ol[i,1])))))
+            
+            #@NLexpression(mdl, FyF[i], -0.5*mass*g*mu*D*sin(C*atan(B*(atan((z_Ol[i,2] + L_f*z_Ol[i,3])/(z_Ol[i,1])) - u_Ol[i,2]))))
+            #@NLexpression(mdl, FyR[i], -0.5*mass*g*mu*D*sin(C*atan(B*(atan((z_Ol[i,2] - L_r*z_Ol[i,3])/(z_Ol[i,1]))))))
+
+            # Limit maximum slip angles
+            # @NLconstraint(mdl, atan((z_Ol[i,2] + L_f*z_Ol[i,3])/(z_Ol[i,1])) - u_Ol[i,2] <= 0.5)
+            # @NLconstraint(mdl, atan((z_Ol[i,2] + L_f*z_Ol[i,3])/(z_Ol[i,1])) - u_Ol[i,2] >= -0.5)
+            # @NLconstraint(mdl, atan((z_Ol[i,2] - L_r*z_Ol[i,3])/(z_Ol[i,1])) <= 0.5)
+            # @NLconstraint(mdl, atan((z_Ol[i,2] - L_r*z_Ol[i,3])/(z_Ol[i,1])) >= -0.5)
+
+            # @NLconstraint(mdl, FyF[i] <= 8)
+            # @NLconstraint(mdl, FyF[i] >= -8)
+            # @NLconstraint(mdl, FyR[i] <= 8)
+            # @NLconstraint(mdl, FyR[i] >= -8)
 
             @NLconstraint(mdl, z_Ol[i+1,1]  == z_Ol[i,1] + dt*(u_Ol[i,1] + z_Ol[i,2]*z_Ol[i,3] - 0.5*z_Ol[i,1])  )                  # xDot
             @NLconstraint(mdl, z_Ol[i+1,2]  == z_Ol[i,2] + dt*(1/mass*(FyF[i]*cos(u_Ol[i,2]) + FyR[i]) - z_Ol[i,3]*z_Ol[i,1])  )       # yDot

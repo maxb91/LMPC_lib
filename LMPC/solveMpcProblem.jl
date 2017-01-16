@@ -36,6 +36,7 @@ function solveMpcProblem_LMPC(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mp
         sol_status  = solve(mdl.mdl)
         counter += 1
         println("Not solved optimally, trying again...")
+        println("state = ",zCurr)
     end
     sol_u       = getvalue(mdl.u_Ol)
     sol_z       = getvalue(mdl.z_Ol)
@@ -46,7 +47,7 @@ function solveMpcProblem_LMPC(mdl::MpcModel,mpcSol::MpcSol,mpcCoeff::MpcCoeff,mp
     mpcSol.u   = sol_u
     mpcSol.z   = sol_z
     mpcSol.solverStatus = sol_status
-    #mpcSol.cost = zeros(6)
+    mpcSol.cost = zeros(6)
     mpcSol.cost = [getvalue(mdl.costZ),getvalue(mdl.costZTerm),getvalue(mdl.constZTerm),getvalue(mdl.derivCost),getvalue(mdl.controlCost),getvalue(mdl.laneCost)]
     #mpcSol.cost = [getvalue(mdl.costZ),0,0,getvalue(mdl.derivCost),0,0]
 
