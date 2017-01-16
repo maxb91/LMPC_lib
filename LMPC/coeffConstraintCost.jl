@@ -33,11 +33,6 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     R               = mpcParams.R
     Order           = mpcCoeff.order                # interpolation order for cost and constraints
     pLength         = mpcCoeff.pLength              # interpolation length for polynomials
-    delay_df        = mpcParams.delay_df
-    #delay_df        = 1
-
-    n_prev          = 20                            # number of points before current s for System ID
-    n_ahead         = 60                            # number of points ahead of current s for System ID
 
     coeffCost       = zeros(Order+1,2)              # polynomial coefficients for cost
     coeffConst      = zeros(Order+1,2,5)            # nz-1 beacuse no coeff for s
@@ -46,9 +41,9 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     #n_laps_sysID    = lapStatus.currentLap-2
     #selected_laps = [lapStatus.currentLap-1,lapStatus.currentLap-2]
     #selected_laps = collect(lapStatus.currentLap-1:-1:lapStatus.currentLap-n_laps_sysID)
-    selected_laps    = zeros(Int64,2)
+    selected_laps    = zeros(Int64,1)
     selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
-    selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
+    #selected_laps[2] = indmin(oldTraj.oldCost[2:lapStatus.currentLap-2])+1      # and the best from all previous laps
     println("Choosing from lap costs: ", oldTraj.oldCost[2:lapStatus.currentLap-2])
     # Select the old data
     oldS            = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
@@ -66,7 +61,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     idx_s_target        = 0
     dist_to_s_target    = 0
     qLength             = 0
-    vec_range::Tuple{UnitRange{Int64},UnitRange{Int64}}
+    vec_range::Tuple{UnitRange{Int64}}#,UnitRange{Int64}}
     bS_Vector::Array{Float64}
     s_forinterpy::Array{Float64}
 
@@ -78,16 +73,16 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
 
     idx_s = findmin(DistS,1)[2]              # contains both indices for the closest distances for both oldS !!
 
-    vec_range = (idx_s[1]:idx_s[1]+pLength,idx_s[2]:idx_s[2]+pLength)
+    vec_range = (idx_s[1]:idx_s[1]+pLength,)#idx_s[2]:idx_s[2]+pLength)
 
     # Create the vectors used for the interpolation
     # bS_vector contains the s-values for later interpolation
     bS_Vector       = zeros(pLength+1,2)
     for i=1:pLength+1
         bS_Vector[i,1] = oldS[vec_range[1][i]]
-        bS_Vector[i,2] = oldS[vec_range[2][i]]
+        #bS_Vector[i,2] = oldS[vec_range[2][i]]
     end
-    if norm(bS_Vector[1,1]-s_total) > 0.3 || norm(bS_Vector[1,2]-s_total) > 0.3
+    if norm(bS_Vector[1,1]-s_total) > 0.3# || norm(bS_Vector[1,2]-s_total) > 0.3
         warn("Couldn't find a close point to current s.")
     end
 
@@ -108,7 +103,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     
     # Compute the coefficients
     coeffConst = zeros(Order+1,2,5)
-    for i=1:2
+    for i=1:1
         coeffConst[:,i,1]    = MatrixInterp[:,:,i]\oldeY[vec_range[i]]
         coeffConst[:,i,2]    = MatrixInterp[:,:,i]\oldePsi[vec_range[i]]
         coeffConst[:,i,3]    = MatrixInterp[:,:,i]\oldV[vec_range[i]]
@@ -120,7 +115,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # These values are calculated for both old trajectories
     # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
     # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
-    for i=1:2   
+    for i=1:1  
             dist_to_s_target  = oldTraj.oldCost[selected_laps[i]] + oldTraj.idx_start[selected_laps[i]] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target
             bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and
                                                                                                     # decreases in equal steps

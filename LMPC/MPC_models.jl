@@ -55,12 +55,12 @@ type MpcModel
         # Create variables (these are going to be optimized)
         @variable( mdl, z_Ol[1:(N+1),1:4], start = 0)          # z = s, ey, epsi, v
         @variable( mdl, u_Ol[1:N,1:2], start = 0)
-        @variable( mdl, 0 <= ParInt <= 1)
+        #@variable( mdl, 0 <= ParInt <= 1)
         @variable( mdl, eps[1:N+1] >= 0)                   # eps for soft lane constraints
 
         # Set bounds
         z_lb_4s = ones(mpcParams.N+1,1)*[-Inf -Inf -Inf -0.5]                  # lower bounds on states
-        z_ub_4s = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  1.5]                  # upper bounds
+        z_ub_4s = ones(mpcParams.N+1,1)*[ Inf  Inf  Inf  1.0]                  # upper bounds
         u_lb_4s = ones(mpcParams.N,1) * [-0.2  -0.5]                           # lower bounds on steering
         u_ub_4s = ones(mpcParams.N,1) * [2.0   0.5]                            # upper bounds
 
@@ -126,14 +126,16 @@ type MpcModel
 
         # Terminal constraints (soft), starting from 2nd lap
         # ---------------------------------
-        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j])+
-                                            (1-ParInt)*(sum{coeffTermConst[i,2,j]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermConst[order+1,2,j])-z_Ol[N+1,j+1])^2,j=1:3})
+        #@NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j])+
+        #                                    (1-ParInt)*(sum{coeffTermConst[i,2,j]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermConst[order+1,2,j])-z_Ol[N+1,j+1])^2,j=1:3})
+        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j]-z_Ol[N+1,j+1])^2,j=1:3})
         
         # Terminal cost
         # ---------------------------------
         # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-        @NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
-                                      (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
+        #@NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
+        #                              (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
+        @NLexpression(mdl, costZTerm, Q_term_cost*(sum{coeffTermCost[i,1]*z_Ol[N+1,1]^(order+1-i),i=1:order}+coeffTermCost[order+1,1]))
 
         # Objective function
         @NLobjective(mdl, Min, costZ + derivCost + controlCost + constZTerm + costZTerm + laneCost)
@@ -148,7 +150,7 @@ type MpcModel
         m.costZ = costZ
         m.controlCost = controlCost
 
-        m.ParInt = ParInt
+        #m.ParInt = ParInt
 
         m.coeffTermCost = coeffTermCost
         m.coeffTermConst = coeffTermConst
