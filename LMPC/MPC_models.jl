@@ -62,12 +62,12 @@ type MpcModel
         # Create variables (these are going to be optimized)
         @variable( mdl, z_Ol[1:(N+1),1:6], start = 0)          # z = s, ey, epsi, v
         @variable( mdl, u_Ol[1:N,1:2], start = 0)
-        #@variable( mdl, 0 <= ParInt <= 1)
+        @variable( mdl, 0 <= ParInt <= 1)
         @variable( mdl, eps[1:N+1] >= 0)                   # eps for soft lane constraints
 
         # Set bounds
-        z_lb_6s = ones(mpcParams.N+1,1)*[0.1   -Inf -Inf -Inf -Inf -Inf]                  # lower bounds on states
-        z_ub_6s = ones(mpcParams.N+1,1)*[10.0   Inf  Inf  Inf  Inf  Inf]                  # upper bounds
+        z_lb_6s = ones(mpcParams.N+1,1)*[0.1   -5.0 -Inf -Inf -1.0 -Inf]                  # lower bounds on states
+        z_ub_6s = ones(mpcParams.N+1,1)*[6.0   5.0  Inf  Inf  1.0  Inf]                  # upper bounds
         u_lb_6s = ones(mpcParams.N,1) * [-5.0  -0.3]                           # lower bounds on steering
         u_ub_6s = ones(mpcParams.N,1) * [5.0   0.3]                            # upper bounds
 
@@ -120,13 +120,23 @@ type MpcModel
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4]) + z_Ol[i,2]*cos(z_Ol[i,4]))  )              # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                            # s
         end
+        @NLconstraint(mdl, (uPrev[1,1]-u_Ol[1,1])/dt<=1)
+        @NLconstraint(mdl, (uPrev[1,1]-u_Ol[1,1])/dt>=-1)
+        @NLconstraint(mdl, (uPrev[1,2]-u_Ol[1,2])/dt<=1)
+        @NLconstraint(mdl, (uPrev[1,2]-u_Ol[1,2])/dt>=-1)
+        for i=1:N-1
+                @NLconstraint(mdl, (u_Ol[i+1,1]-u_Ol[i,1])/dt<=1)
+                @NLconstraint(mdl, (u_Ol[i+1,1]-u_Ol[i,1])/dt>=-1)
+                @NLconstraint(mdl, (u_Ol[i+1,2]-u_Ol[i,2])/dt<=1)
+                @NLconstraint(mdl, (u_Ol[i+1,2]-u_Ol[i,2])/dt>=-1)
+        end
 
         # Cost definitions
         # Derivative cost
         # ---------------------------------
-        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{(z_Ol[i,j]-z_Ol[i+1,j])^2,i=1:N}),j=1:6} +
-                                            QderivU[1]*((uPrev[1,1]-u_Ol[1,1])^2+sum{(u_Ol[i,1]-u_Ol[i+1,1])^2,i=1:N-1})+
-                                            QderivU[2]*((uPrev[1,2]-u_Ol[1,2])^2+sum{(u_Ol[i,2]-u_Ol[i+1,2])^2,i=1:N-1}))
+        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{((z_Ol[i,j]-z_Ol[i+1,j])/dt)^2,i=1:N}),j=1:6} +
+                                            QderivU[1]*(((uPrev[1,1]-u_Ol[1,1])/dt)^2+sum{((u_Ol[i,1]-u_Ol[i+1,1])/dt)^2,i=1:N-1})+
+                                            QderivU[2]*(((uPrev[1,2]-u_Ol[1,2])/dt)^2+sum{((u_Ol[i,2]-u_Ol[i+1,2])/dt)^2,i=1:N-1}))
         # Control Input cost
         # ---------------------------------
         @NLexpression(mdl, controlCost, 0)#0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
@@ -143,17 +153,17 @@ type MpcModel
 
         # Terminal constraints (soft), starting from 2nd lap
         # ---------------------------------
-        #@NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j])+
-        #                                    (1-ParInt)*(sum{coeffTermConst[i,2,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,2,j])-z_Ol[N+1,j])^2,j=1:5})
-        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j]-z_Ol[N+1,j])^2,j=1:5})
+        @NLexpression(mdl, constZTerm, sum{Q_term[j]*(ParInt*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j])+
+                                            (1-ParInt)*(sum{coeffTermConst[i,2,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,2,j])-z_Ol[N+1,j])^2,j=1:5})
+        #@NLexpression(mdl, constZTerm, sum{Q_term[j]*(sum{coeffTermConst[i,1,j]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermConst[order+1,1,j]-z_Ol[N+1,j])^2,j=1:5})
         
-        #@NLconstraint(mdl, constZTerm <= 10)
+        #@NLconstraint(mdl, constZTerm <= 1)
         # Terminal cost
         # ---------------------------------
         # The value of this cost determines how fast the algorithm learns. The higher this cost, the faster the control tries to reach the finish line.
-        #@NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
-        #                              (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
-        @NLexpression(mdl, costZTerm, Q_term_cost*sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])
+        @NLexpression(mdl, costZTerm, Q_term_cost*(ParInt*(sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])+
+                                      (1-ParInt)*(sum{coeffTermCost[i,2]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,2])))
+        #@NLexpression(mdl, costZTerm, Q_term_cost*sum{coeffTermCost[i,1]*z_Ol[N+1,6]^(order+1-i),i=1:order}+coeffTermCost[order+1,1])
 
         # Objective function
         @NLobjective(mdl, Min, costZ + derivCost + constZTerm + costZTerm + laneCost)
@@ -168,7 +178,7 @@ type MpcModel
         m.costZ = costZ
         m.controlCost = controlCost
 
-        #m.ParInt = ParInt
+        m.ParInt = ParInt
 
         m.coeffTermCost = coeffTermCost
         m.coeffTermConst = coeffTermConst
@@ -417,9 +427,9 @@ type MpcModel_pF
         # Cost definitions
         # Derivative cost
         # ---------------------------------
-        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{(z_Ol[i,j]-z_Ol[i+1,j])^2,i=1:N}),j=1:4} +
-                                            QderivU[1]*((uPrev[1,1]-u_Ol[1,1])^2+sum{(u_Ol[i,1]-u_Ol[i+1,1])^2,i=1:N-1})+
-                                            QderivU[2]*((uPrev[1,2]-u_Ol[1,2])^2+sum{(u_Ol[i,2]-u_Ol[i+1,2])^2,i=1:N-1}))
+        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{((z_Ol[i,j]-z_Ol[i+1,j])/dt)^2,i=1:N}),j=1:4} +
+                                            QderivU[1]*(((uPrev[1,1]-u_Ol[1,1])/dt)^2+sum{((u_Ol[i,1]-u_Ol[i+1,1])/dt)^2,i=1:N-1})+
+                                            QderivU[2]*(((uPrev[1,2]-u_Ol[1,2])/dt)^2+sum{((u_Ol[i,2]-u_Ol[i+1,2])/dt)^2,i=1:N-1}))
         # Control Input cost
         # ---------------------------------
         @NLexpression(mdl, controlCost, 0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
