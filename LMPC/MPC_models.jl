@@ -68,8 +68,8 @@ type MpcModel
         # Set bounds
         z_lb_6s = ones(mpcParams.N+1,1)*[0.1   -5.0 -Inf -Inf -1.0 -Inf]                  # lower bounds on states
         z_ub_6s = ones(mpcParams.N+1,1)*[6.0   5.0  Inf  Inf  1.0  Inf]                  # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [-5.0  -0.3]                           # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [5.0   0.3]                            # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [-1.8  -0.3]                           # lower bounds on steering
+        u_ub_6s = ones(mpcParams.N,1) * [1.8   0.3]                            # upper bounds
 
         for i=1:2
             for j=1:N
@@ -134,9 +134,9 @@ type MpcModel
         # Cost definitions
         # Derivative cost
         # ---------------------------------
-        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{((z_Ol[i,j]-z_Ol[i+1,j])/dt)^2,i=1:N}),j=1:6} +
-                                            QderivU[1]*(((uPrev[1,1]-u_Ol[1,1])/dt)^2+sum{((u_Ol[i,1]-u_Ol[i+1,1])/dt)^2,i=1:N-1})+
-                                            QderivU[2]*(((uPrev[1,2]-u_Ol[1,2])/dt)^2+sum{((u_Ol[i,2]-u_Ol[i+1,2])/dt)^2,i=1:N-1}))
+        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{((z_Ol[i,j]-z_Ol[i+1,j]))^2,i=1:N}),j=1:6} +
+                                            QderivU[1]*(((uPrev[1,1]-u_Ol[1,1]))^2+sum{((u_Ol[i,1]-u_Ol[i+1,1]))^2,i=1:N-1})+
+                                            QderivU[2]*(((uPrev[1,2]-u_Ol[1,2]))^2+sum{((u_Ol[i,2]-u_Ol[i+1,2]))^2,i=1:N-1}))
         # Control Input cost
         # ---------------------------------
         @NLexpression(mdl, controlCost, 0)#0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
@@ -427,9 +427,9 @@ type MpcModel_pF
         # Cost definitions
         # Derivative cost
         # ---------------------------------
-        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{((z_Ol[i,j]-z_Ol[i+1,j])/dt)^2,i=1:N}),j=1:4} +
-                                            QderivU[1]*(((uPrev[1,1]-u_Ol[1,1])/dt)^2+sum{((u_Ol[i,1]-u_Ol[i+1,1])/dt)^2,i=1:N-1})+
-                                            QderivU[2]*(((uPrev[1,2]-u_Ol[1,2])/dt)^2+sum{((u_Ol[i,2]-u_Ol[i+1,2])/dt)^2,i=1:N-1}))
+        @NLexpression(mdl, derivCost, sum{QderivZ[j]*(sum{((z_Ol[i,j]-z_Ol[i+1,j]))^2,i=1:N}),j=1:4} +
+                                            QderivU[1]*(((uPrev[1,1]-u_Ol[1,1]))^2+sum{((u_Ol[i,1]-u_Ol[i+1,1]))^2,i=1:N-1})+
+                                            QderivU[2]*(((uPrev[1,2]-u_Ol[1,2]))^2+sum{((u_Ol[i,2]-u_Ol[i+1,2]))^2,i=1:N-1}))
         # Control Input cost
         # ---------------------------------
         @NLexpression(mdl, controlCost, 0.5*R[1]*sum{(u_Ol[i,1])^2,i=1:N}+
