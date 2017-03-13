@@ -61,7 +61,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     mpcParams_pF.QderivU        = 10.0*[10,1]                # cost matrix for derivative cost of inputs
     mpcParams_pF.vPathFollowing = 2.0                       # reference speed for first lap of path following
 
-    trackCoeff.nPolyCurvature   = 8                         # n-th order polynomial for curvature approximation
+    trackCoeff.nPolyCurvature   = 10                         # n-th order polynomial for curvature approximation
     trackCoeff.coeffCurvature   = zeros(trackCoeff.nPolyCurvature+1)         # polynomial coefficients for curvature approximation (zeros for straight line)
     trackCoeff.width            = 0.8                       # width of the track
 
@@ -72,7 +72,7 @@ function InitializeParameters(mpcParams::MpcParams,mpcParams_pF::MpcParams,track
     modelParams.I_z             = 0.03
     modelParams.c_f             = 0.5                   # friction coefficient: xDot = - c_f*xDot (aerodynamic+tire+motor (mostly motor))
     modelParams.g               = 9.81
-    modelParams.mu              = 0.8
+    modelParams.mu              = 0.6
     modelParams.B               = 5.0#10.0 # worked well with B=5
     modelParams.C               = 2.0#1.9
     modelParams.D               = 1.0

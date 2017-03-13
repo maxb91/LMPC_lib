@@ -44,8 +44,11 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     #selected_laps = [lapStatus.currentLap-1,lapStatus.currentLap-2]
     #selected_laps = collect(lapStatus.currentLap-1:-1:lapStatus.currentLap-n_laps_sysID)
     selected_laps = zeros(Int64,2)
-    selected_laps[1] = lapStatus.currentLap-1                                   # use previous lap
-    selected_laps[2] = indmin(oldTraj.oldCost[1:lapStatus.currentLap-2])      # and the best from all previous laps
+    selected_laps[1] = lapStatus.currentLap-2                                   # use previous lap
+    selected_laps[2] = lapStatus.currentLap-2                                   # use previous lap
+    if lapStatus.currentLap > 3
+        selected_laps[2] = indmin(oldTraj.oldCost[1:lapStatus.currentLap-3])      # and the best from all previous laps
+    end
 
     # Select the old data
     oldvX           = oldTraj.oldTraj[:,1,selected_laps]::Array{Float64,3}
@@ -86,7 +89,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
         bS_Vector[i,1] = oldS[vec_range[1][i]]
         bS_Vector[i,2] = oldS[vec_range[2][i]]
     end
-    if norm(bS_Vector[1,1]-s_total) > 0.3# || norm(bS_Vector[1,2]-s_total) > 0.3
+    if norm(bS_Vector[1,1]-s_total) > 0.3 || norm(bS_Vector[1,2]-s_total) > 0.3
         warn("Couldn't find a close point to current s.")
     end
 
@@ -120,7 +123,7 @@ function coeffConstraintCost(oldTraj::OldTrajectory, mpcCoeff::MpcCoeff, posInfo
     # The Q-function contains for every point in the sampled safe set the minimum cost-to-go-value
     # These values are calculated for both old trajectories
     # The vector bQfunction_Vector contains the cost at each point in the interpolated area to reach the finish line
-    # From this vector, polynomial coefficients coeffCost are calculated to approximate this cost
+    # From this vector, polynomial coesfficients coeffCost are calculated to approximate this cost
     for i=1:2
             dist_to_s_target  = oldTraj.oldCost[selected_laps[i]] + oldTraj.idx_start[selected_laps[i]] - (idx_s[i]-N_points*(i-1))  # number of iterations from idx_s to s_target
             bQfunction_Vector = collect(linspace(dist_to_s_target,dist_to_s_target-pLength,pLength+1))    # build a vector that starts at the distance and

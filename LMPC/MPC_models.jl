@@ -68,8 +68,8 @@ type MpcModel
         # Set bounds
         z_lb_6s = ones(mpcParams.N+1,1)*[0.1   -5.0 -Inf -Inf -1.0 -Inf]                  # lower bounds on states
         z_ub_6s = ones(mpcParams.N+1,1)*[6.0   5.0  Inf  Inf  1.0  Inf]                  # upper bounds
-        u_lb_6s = ones(mpcParams.N,1) * [-1.8  -0.3]                           # lower bounds on steering
-        u_ub_6s = ones(mpcParams.N,1) * [1.8   0.3]                            # upper bounds
+        u_lb_6s = ones(mpcParams.N,1) * [-2.0  -0.3]                           # lower bounds on steering
+        u_ub_6s = ones(mpcParams.N,1) * [1.5   0.3]                            # upper bounds
 
         for i=1:2
             for j=1:N
@@ -120,16 +120,16 @@ type MpcModel
             @NLconstraint(mdl, z_Ol[i+1,5]  == z_Ol[i,5] + dt*(z_Ol[i,1]*sin(z_Ol[i,4]) + z_Ol[i,2]*cos(z_Ol[i,4]))  )              # eY
             @NLconstraint(mdl, z_Ol[i+1,6]  == z_Ol[i,6] + dt*dsdt[i]  )                                                            # s
         end
-        @NLconstraint(mdl, (uPrev[1,1]-u_Ol[1,1])/dt<=1)
-        @NLconstraint(mdl, (uPrev[1,1]-u_Ol[1,1])/dt>=-1)
-        @NLconstraint(mdl, (uPrev[1,2]-u_Ol[1,2])/dt<=1)
-        @NLconstraint(mdl, (uPrev[1,2]-u_Ol[1,2])/dt>=-1)
-        for i=1:N-1
-                @NLconstraint(mdl, (u_Ol[i+1,1]-u_Ol[i,1])/dt<=1)
-                @NLconstraint(mdl, (u_Ol[i+1,1]-u_Ol[i,1])/dt>=-1)
-                @NLconstraint(mdl, (u_Ol[i+1,2]-u_Ol[i,2])/dt<=1)
-                @NLconstraint(mdl, (u_Ol[i+1,2]-u_Ol[i,2])/dt>=-1)
-        end
+        # @NLconstraint(mdl, (uPrev[1,1]-u_Ol[1,1])/dt<=1)
+        # @NLconstraint(mdl, (uPrev[1,1]-u_Ol[1,1])/dt>=-1)
+        # @NLconstraint(mdl, (uPrev[1,2]-u_Ol[1,2])/dt<=1)
+        # @NLconstraint(mdl, (uPrev[1,2]-u_Ol[1,2])/dt>=-1)
+        # for i=1:N-1
+        #         @NLconstraint(mdl, (u_Ol[i+1,1]-u_Ol[i,1])/dt<=1)
+        #         @NLconstraint(mdl, (u_Ol[i+1,1]-u_Ol[i,1])/dt>=-1)
+        #         @NLconstraint(mdl, (u_Ol[i+1,2]-u_Ol[i,2])/dt<=1)
+        #         @NLconstraint(mdl, (u_Ol[i+1,2]-u_Ol[i,2])/dt>=-1)
+        # end
 
         # Cost definitions
         # Derivative cost
